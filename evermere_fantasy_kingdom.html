@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Evermere — Fantasy Royal Kingdom</title>
+<style>
+  :root{--gold:#e7c77a;--cream:#fff4dc;--ink:#202033;--glass:rgba(24,25,42,.82)}
+  *{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#a9c9df;font-family:Georgia,serif;color:var(--cream)}
+  #scene{position:fixed;inset:0}
+  canvas{display:block}
+  .panel{position:fixed;z-index:3;background:var(--glass);border:1px solid rgba(231,199,122,.55);box-shadow:0 12px 35px #10102055;backdrop-filter:blur(12px);border-radius:14px}
+  #brand{top:16px;left:16px;padding:13px 17px;min-width:220px}
+  #brand strong{display:block;font-size:19px;letter-spacing:2px;color:var(--gold)}
+  #brand span{font:10px/1.5 Arial,sans-serif;letter-spacing:2px;opacity:.8}
+  #toolbar{top:16px;right:16px;padding:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:min(620px,65vw);justify-content:flex-end}
+  button,select{font:12px Arial,sans-serif;color:var(--cream);background:#35334c;border:1px solid #8c7449;border-radius:8px;padding:9px 11px;cursor:pointer}
+  button:hover,select:hover,button.active{background:#80643b;color:#fff4dc;border-color:var(--gold)}
+  #info{left:16px;bottom:16px;padding:12px 15px;max-width:290px;font:12px/1.55 Arial,sans-serif}
+  #info b{color:var(--gold)}
+  #rooms{right:16px;bottom:16px;padding:12px;display:none;width:220px}
+  #rooms h3{margin:0 0 9px;color:var(--gold);font-size:15px}
+  #rooms button{width:100%;margin:3px 0;text-align:left}
+  #toast{position:fixed;z-index:5;top:86px;left:50%;transform:translateX(-50%);background:#211f35dd;border:1px solid var(--gold);padding:10px 17px;border-radius:30px;font:12px Arial,sans-serif;opacity:0;transition:opacity .25s;pointer-events:none}
+  #crosshair{position:fixed;left:50%;top:50%;width:7px;height:7px;border:1px solid #fff;border-radius:50%;transform:translate(-50%,-50%);opacity:.0;pointer-events:none}
+  #footer{position:fixed;right:16px;top:82px;font:10px Arial,sans-serif;color:#fff;text-shadow:0 1px 4px #222;opacity:.85}
+  @media(max-width:700px){#toolbar{top:85px;left:12px;right:12px;max-width:none;justify-content:flex-start}#brand{top:12px;left:12px}#info{bottom:12px;left:12px;max-width:220px}#rooms{bottom:12px;right:12px;width:180px}button{padding:8px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="scene"></div>
+<div id="brand" class="panel"><strong>EVERMERE</strong><span>THE ENCHANTED ROYAL CAPITAL</span></div>
+<div id="toolbar" class="panel">
+  <button id="home" class="active">Dunia</button>
+  <button id="enter">Masuk Istana</button>
+  <button id="exit" style="display:none">Keluar</button>
+  <button id="xray">X-Ray</button>
+  <button id="cut">Cutaway</button>
+  <button id="explode">Exploded</button>
+  <button id="layout">Part Layout</button>
+  <button id="reset">Reset View</button>
+</div>
+<div id="footer">DRAG: putar · SCROLL: zoom · KLIK bangunan: jelajahi</div>
+<div id="info" class="panel"><b>ROYAL CAPITAL</b><br>Kerajaan Evermere sedang beraktivitas. Jelajahi istana, taman, pasar, dan distrik kota.<br><br><span id="count">Bagian 0</span> · <span id="people">0 penduduk</span> · <span id="carriages">0 kereta</span></div>
+<div id="rooms" class="panel"><h3>Istana Evermere</h3><button data-room="Throne Hall">Aula Singgasana</button><button data-room="Grand Ballroom">Ballroom</button><button data-room="Royal Library">Perpustakaan</button><button data-room="Royal Bedchamber">Kamar Kerajaan</button><button data-room="Royal Gallery">Galeri Kerajaan</button></div>
+<div id="toast"></div><div id="crosshair"></div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fc7e3); scene.fog=new THREE.Fog(0x9fc7e3,150,360);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,900); camera.position.set(112,90,145);
+const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12; document.querySelector('#scene').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,15,0); controls.enableDamping=true; controls.dampingFactor=.06; controls.maxPolarAngle=Math.PI*.49; controls.minDistance=9; controls.maxDistance=280;
+scene.add(new THREE.HemisphereLight(0xddeeff,0x79604a,2.0));
+const sun=new THREE.DirectionalLight(0xffe2b1,3.2); sun.position.set(-90,150,70); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-180;sun.shadow.camera.right=180;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180; scene.add(sun);
+const mat=(c,rough=.8,metal=0)=>new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:metal});
+const M={grass:mat(0x668b55),darkGrass:mat(0x456c48),stone:mat(0xc9b99d),road:mat(0x887e70),wall:mat(0xf1dfc2),white:mat(0xfff0d8),roof:mat(0x315a83),roof2:mat(0x9b4d48),gold:mat(0xd6ad55,.35,.55),window:mat(0x83b8c8,.25,.15),wood:mat(0x75472d),darkWood:mat(0x493027),water:mat(0x65bad0,.18,.25),leaf:mat(0x47764b),flower:mat(0xe9a6b5),cloth:mat(0x8e4050),blue:mat(0x496b9a),skin:mat(0xe6b38b),black:mat(0x332c31),horse:mat(0x6b4635),wheel:mat(0x3d3028)};
+const root=new THREE.Group(); scene.add(root); const parts=[]; const animated=[]; const clickable=[];
+function addMesh(g,geo,material,x,y,z, name='part'){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;o.userData.partName=name;g.add(o);parts.push(o);return o}
+function box(g,x,y,z,sx,sy,sz,m,n){return addMesh(g,new THREE.BoxGeometry(sx,sy,sz),m,x,y,z,n)}
+function cyl(g,x,y,z,r1,r2,h,m,n,seg=12){return addMesh(g,new THREE.CylinderGeometry(r1,r2,h,seg),m,x,y,z,n)}
+function sphere(g,x,y,z,r,m,n){return addMesh(g,new THREE.SphereGeometry(r,12,10),m,x,y,z,n)}
+function cone(g,x,y,z,r,h,m,n){return addMesh(g,new THREE.ConeGeometry(r,h,12),m,x,y,z,n)}
+function roof(g,x,y,z,r,h,m){return cone(g,x,y,z,r,h,m,'turret roof')}
+function tree(x,z,s=1){const g=new THREE.Group();root.add(g);cyl(g,0,2*s,0,.45*s,.6*s,4*s,M.wood,'tree trunk');for(let i=0;i<3;i++)sphere(g,(Math.random()-.5)*.7*s,(4+i*.9)*s,(Math.random()-.5)*.7*s,1.7*s,M.leaf,'tree canopy');g.position.set(x,0,z)}
+// Ground and districts
+box(root,0,-1.5,0,340,2,340,M.grass,'kingdom terrain');
+const plaza=box(root,0,.02,0,74,.18,66,M.stone,'royal plaza');plaza.receiveShadow=true;
+box(root,0,.14,35,280,.22,12,M.road,'main avenue');
+box(root,0,.14,-46,230,.22,9,M.road,'north avenue');
+box(root,-72,.13,0,9,.22,120,M.road,'west avenue');box(root,72,.13,0,9,.22,120,M.road,'east avenue');
+// Castle platform
+box(root,0,1,0,76,2.2,58,M.stone,'palace foundation');box(root,0,2.3,0,70,.7,52,M.white,'palace terrace');
+// Palace main building group
+const palace=new THREE.Group();root.add(palace);palace.position.set(0,0,-4);clickable.push({obj:palace,label:'Istana Evermere'});
+box(palace,0,12,0,38,21,25,M.wall,'palace central keep');
+box(palace,0,24,0,21,3,18,M.white,'upper palace tier');
+box(palace,0,26,0,23,1,20,M.gold,'gold roof trim');
+function tower(g,x,z,h=32,r=5){cyl(g,x,h/2,z,r,r,h,M.wall,'castle tower');cyl(g,x,h+1,z,r+.35,r+.35,1.1,M.gold,'tower balcony');roof(g,x,h+5,z,r*1.32,h*.34,M.roof);cyl(g,x,h+2,z,.55,.55,1.5,M.gold,'spire finial');}
+tower(palace,-16,-10,31,4.8);tower(palace,16,-10,31,4.8);tower(palace,-16,10,29,4.4);tower(palace,16,10,29,4.4);
+tower(palace,0,-1,48,5.8);tower(palace,-27,0,23,3.8);tower(palace,27,0,23,3.8);
+for(let x=-12;x<=12;x+=6){box(palace,x,14,12.7,2.3,5,.3,M.gold,'gold window frame');box(palace,x,14,12.9,1.7,4.3,.2,M.window,'palace window');}
+box(palace,0,6,12.8,7,10,.5,M.darkWood,'grand entrance');box(palace,0,7,13.15,5.6,8,.3,M.wood,'grand door');
+for(let x of [-5,5])cyl(palace,x,6,14,1,1,12,M.white,'entrance column');
+const balcony=box(palace,0,19,13.2,14,1,3,M.stone,'royal balcony');
+for(let x=-6;x<=6;x+=2)box(palace,x,20,14.4,.25,1.2,.25,M.gold,'balustrade');
+for(let z of [-8,0,8])for(let x of [-7,7]){box(palace,x,9,z,2.1,4,.3,M.gold,'window frame');box(palace,x,9,z+.2,1.5,3.3,.2,M.window,'glass window')}
+for(let i=0;i<3;i++){box(palace,0,3+i*1.2,17+i*2,12+i*5,1,3,M.stone,'grand staircase step')}
+// Flags
+function flag(x,y,z){cyl(root,x,y,z,.13,.13,7,M.gold,'flag pole');const f=box(root,x+1,y+2,z,2.1,2.6,.12,M.cloth,'royal banner');f.rotation.z=-.08; sphere(root,x,y+3.8,z,.3,M.gold,'flag finial')}
+flag(-20,26,-10);flag(20,26,-10);flag(0,43,-5);
+// Garden fountains
+function fountain(x,z){const g=new THREE.Group();root.add(g);cyl(g,x,.6,z,5,5,1.2,M.stone,'fountain basin');cyl(g,x,1.2,z,3.6,3.6,.3,M.water,'fountain water');cyl(g,x,2.2,z,.8,1.4,2,M.stone,'fountain pedestal');sphere(g,x,3.5,z,.8,M.water,'fountain spray');for(let i=0;i<4;i++){const a=i*Math.PI/2;const s=sphere(g,x+Math.cos(a)*2.1,2.7,z+Math.sin(a)*2.1,.42,M.water,'water jet');s.scale.y=1.8;}}
+fountain(-39,0);fountain(39,0);fountain(0,48);
+for(let i=0;i<42;i++){const a=Math.random()*Math.PI*2,r=27+Math.random()*34;tree(Math.cos(a)*r,Math.sin(a)*r, .55+Math.random()*.45)}
+// garden paths and pavilions
+for(const [x,z] of [[-48,-22],[48,-22],[-48,25],[48,25],[-25,54],[25,54]]){
+ const g=new THREE.Group();root.add(g);box(g,x,3,z,13,5,11,M.white,'garden pavilion');for(let dx of [-5,5])for(let dz of [-4,4])cyl(g,x+dx,3,z+dz,.35,.35,6,M.gold,'pavilion column');roof(g,x,7,z,9,5,M.roof2);cyl(g,x,10,z,.3,.3,1.5,M.gold,'pavilion finial');
+}
+// Market and city buildings
+function house(x,z,w=12,d=10,h=9,roofMat=M.roof,label='merchant house'){
+ const g=new THREE.Group();root.add(g);box(g,x,h/2,z,w,h,d,M.wall,label);box(g,x,h+0.15,z,w+.5,.4,d+.5,M.gold,'roof cornice');
+ const r=roof(g,x,h+3,z,Math.max(w,d)*.72,6,roofMat);r.scale.set(w/12,1,d/10);
+ box(g,x,h*.48,z+d/2+.12,2.4,4,.25,M.wood,'front door');
+ for(let dx of [-w*.28,w*.28]){box(g,x+dx,h*.65,z+d/2+.16,1.5,2.3,.2,M.window,'house window');}
+ clickable.push({obj:g,label});return g;
+}
+for(let i=0;i<8;i++){const x=-105+i*30;house(x,83,13,12,10,i%2?M.roof2:M.roof,'capital house')}
+for(let i=0;i<6;i++){house(-110, -20+i*24,12,11,9,i%2?M.roof:M.roof2,'west district home');house(110,-20+i*24,12,11,9,M.roof2,'east district home')}
+house(-88,52,18,15,13,M.roof2,'Royal Inn');house(88,52,18,15,13,M.roof,'Guild Hall');
+house(-65,-75,22,16,15,M.roof,'Grand Cathedral');house(65,-75,20,16,12,M.roof2,'Royal Academy');
+// Market stalls
+function stall(x,z,cloth){const g=new THREE.Group();root.add(g);box(g,x,2,z,7,3,5,M.wood,'market counter');for(let dx of [-3,3])for(let dz of [-2,2])cyl(g,x+dx,4,z+dz,.16,.16,4,M.wood,'stall post');const canopy=box(g,x,5.3,z,8,.5,6,cloth,'market canopy');canopy.rotation.z=.02;for(let i=0;i<5;i++)sphere(g,x-2+i,2.8,z+2.1,.42,[M.flower,M.gold,M.blue][i%3],'market goods');}
+for(let i=0;i<8;i++)stall(-26+i*7,36,i%2?M.cloth:M.blue);
+// street lanterns
+function lamp(x,z){cyl(root,x,3,z,.12,.12,6,M.darkWood,'street lamp');cyl(root,x,6.3,z,.8,.8,.3,M.gold,'lamp cap');sphere(root,x,5.6,z,.5,mat(0xffe8a0,.25),'lamp light')}
+for(let x=-90;x<=90;x+=18){lamp(x,29);lamp(x,-48)}
+// Villagers: stylized low-poly animated figures
+function person(x,z,shirt,scale=1){const g=new THREE.Group();root.add(g);g.position.set(x,0,z);const body=cyl(g,0,1.25,0,.42*scale,.55*scale,1.25*scale,shirt,'villager body');sphere(g,0,2.15*scale,0,.42*scale,M.skin,'villager head');sphere(g,0,2.55*scale,0,.44*scale,M.wood,'villager hair');for(let dx of [-.22,.22]){cyl(g,dx,.45,0,.13*scale,.13*scale,.8*scale,M.darkWood,'villager leg')}const arms=[];for(let dx of [-.55,.55]){const a=cyl(g,dx,1.35,0,.13*scale,.13*scale,.8*scale,M.skin,'villager arm');a.rotation.z=dx>0?-.3:.3;arms.push(a)}return g}
+const people=[];
+for(let i=0;i<30;i++){const x=-30+Math.random()*60,z=23+Math.random()*24;const p=person(x,z,[M.blue,M.cloth,M.gold,M.leaf][i%4],.75+Math.random()*.25);p.userData.phase=Math.random()*6;people.push(p)}
+// horses and carts on road
+function carriage(x,z){const g=new THREE.Group();root.add(g);g.position.set(x,0,z);const cart=new THREE.Group();g.add(cart);box(cart,0,2,0,5,2.2,4,M.wood,'carriage body');box(cart,0,3.3,-.2,5.3,.35,4.3,M.gold,'carriage trim');for(let dx of [-2.2,2.2]){const w=cyl(cart,dx,1,2.2,.95,.95,.35,M.wheel,'carriage wheel',16);w.rotation.x=Math.PI/2;const w2=cyl(cart,dx,1,-2.2,.95,.95,.35,M.wheel,'carriage wheel',16);w2.rotation.x=Math.PI/2}
+const horse=new THREE.Group();g.add(horse);horse.position.set(0,0,4.7);box(horse,0,2,0,1.3,1.2,2.6,M.horse,'horse body');sphere(horse,0,2.6,1.1,.65,M.horse,'horse head');for(let dx of [-.5,.5])for(let dz of [-.8,.8])cyl(horse,dx,.9,dz,.16,.12,1.7,M.horse,'horse leg');const rein=box(g,0,2.5,2.5,.15,.15,4,M.darkWood,'carriage reins');return {g,horse,cart,phase:Math.random()*100}}
+const carts=[carriage(-45,35),carriage(48,35),carriage(-100,29)];
+// decorative walls and gates
+for(let x of [-85,85]){box(root,x,7,30,3,14,3,M.stone,'city gate pillar');roof(root,x,16,30,3.5,4,M.roof2);box(root,x/2,8,30,90,2,2,M.stone,'capital wall')}
+const gate=new THREE.Group();root.add(gate);box(gate,0,8,30,7,16,3,M.stone,'capital gatehouse');roof(gate,0,18,30,7,6,M.roof2);
+// Interior rooms, hidden until entered
+const interior=new THREE.Group();scene.add(interior);interior.visible=false;
+const roomMats=[M.wall,M.gold,M.wood,M.window];
+function makeRoom(name){const g=new THREE.Group();interior.add(g);box(g,0,-.5,0,30,1,24,M.wood,'room floor');box(g,0,8,-12,30,16,1,M.wall,'room back wall');box(g,-15,8,0,1,16,24,M.wall,'room side wall');box(g,15,8,0,1,16,24,M.wall,'room side wall');box(g,0,16,0,30,1,24,M.white,'room ceiling');for(let x of [-10,-5,0,5,10]){cyl(g,x,8,-10,.32,.32,15,M.gold,'ornate interior column');sphere(g,x,15.8,-10,.6,M.gold,'column capital')}
+if(name==='Throne Hall'){box(g,0,1.5,-7,12,2,4,M.gold,'throne dais');box(g,0,4,-8,3,4,2,M.cloth,'royal throne');sphere(g,0,6.5,-8,1.5,M.gold,'throne crown ornament');for(let x of [-9,9]){box(g,x,5,-2,3,8,3,M.blue,'royal tapestry')}}
+if(name==='Grand Ballroom'){for(let x=-10;x<=10;x+=5){cyl(g,x,12,0,.2,.2,1,M.gold,'chandelier chain');sphere(g,x,11.5,0,1,M.gold,'chandelier');for(let a=0;a<5;a++){const c=sphere(g,x+Math.cos(a*1.256)*1.4,11,Math.sin(a*1.256)*1.4,.22,M.window,'crystal light')}}}
+if(name==='Royal Library'){for(let x of [-10,-5,5,10]){box(g,x,6,-9,3,11,1,M.darkWood,'bookshelf');for(let j=0;j<5;j++)box(g,x,2+j*1.8,-8.35,2.5,.25,.2,[M.cloth,M.blue,M.gold][j%3],'books')}}
+if(name==='Royal Bedchamber'){box(g,0,2,-5,8,2,10,M.gold,'royal bed frame');box(g,0,3,-5,7,1,9,M.cloth,'royal bed');for(let x of [-11,11])box(g,x,5,-3,2,8,2,M.gold,'wardrobe')}
+if(name==='Royal Gallery'){for(let x=-10;x<=10;x+=5){box(g,x,7,-10,3,4,.3,M.gold,'portrait frame');box(g,x,7,-9.8,2.5,3.5,.15,M.cloth,'royal portrait')}}
+return g}
+const roomNames=['Throne Hall','Grand Ballroom','Royal Library','Royal Bedchamber','Royal Gallery'];const roomGroups={};roomNames.forEach(n=>roomGroups[n]=makeRoom(n));Object.values(roomGroups).forEach(g=>g.visible=false);
+let inRoom=false,currentRoom='Throne Hall',mode='normal';const toast=document.querySelector('#toast');
+function notify(t){toast.textContent=t;toast.style.opacity=1;clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.style.opacity=0,2200)}
+function enterRoom(name){currentRoom=name;inRoom=true;interior.visible=true;Object.values(roomGroups).forEach(g=>g.visible=false);roomGroups[name].visible=true;root.visible=false;camera.position.set(0,7,19);controls.target.set(0,6,0);controls.maxDistance=25;controls.minDistance=3;controls.maxPolarAngle=Math.PI*.88;document.querySelector('#rooms').style.display='block';document.querySelector('#enter').style.display='none';document.querySelector('#exit').style.display='inline-block';document.querySelector('#crosshair').style.opacity=0;notify('Memasuki '+name)}
+function exitRoom(){inRoom=false;interior.visible=false;root.visible=true;camera.position.set(112,90,145);controls.target.set(0,15,0);controls.maxDistance=280;controls.minDistance=9;controls.maxPolarAngle=Math.PI*.49;document.querySelector('#rooms').style.display='none';document.querySelector('#enter').style.display='inline-block';document.querySelector('#exit').style.display='none';notify('Kembali ke ibu kota')}
+document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>enterRoom(b.dataset.room));
+document.querySelector('#enter').onclick=()=>enterRoom('Throne Hall');document.querySelector('#exit').onclick=exitRoom;
+document.querySelector('#home').onclick=()=>{if(inRoom)exitRoom();camera.position.set(112,90,145);controls.target.set(0,15,0)};
+document.querySelector('#reset').onclick=()=>{if(inRoom){camera.position.set(0,7,19);controls.target.set(0,6,0)}else{camera.position.set(112,90,145);controls.target.set(0,15,0)}};
+function setMode(m){mode=m;for(const o of parts){o.visible=true;o.material=o.userData.originalMaterial||o.material;if(!o.userData.originalMaterial)o.userData.originalMaterial=o.material}
+if(m==='xray'){for(const o of parts){o.material=o.userData.originalMaterial.clone();o.material.transparent=true;o.material.opacity=.24;o.material.wireframe=false}}
+if(m==='cut'){for(const o of parts){if(o.position.z>10)o.visible=false;}}
+if(m==='explode'){for(const o of parts){const v=o.position.clone();o.position.add(new THREE.Vector3(v.x*.12,Math.max(0,v.y)*.18,v.z*.12));}}
+if(m==='layout'){root.visible=true;interior.visible=false;let i=0;for(const o of parts){o.visible=true;const a=i%18,b=Math.floor(i/18)%12,c=Math.floor(i/216);o.position.set((a-9)*5,Math.floor(b/2)*3+2,(c-2)*12+(b%2)*5);i++}}
+if(m!=='layout')root.visible=!inRoom;notify(({normal:'Tampilan kerajaan',xray:'Mode X-Ray',cut:'Mode Cutaway',explode:'Mode Exploded',layout:'Semua bagian ditata'})[m])}
+[['xray','xray'],['cut','cut'],['explode','explode'],['layout','layout']].forEach(([id,m])=>document.getElementById(id).onclick=()=>{if(mode===m){location.reload();return}setMode(m)});
+document.querySelector('#home').onclick=()=>{if(inRoom)exitRoom();if(mode!=='normal')location.reload();camera.position.set(112,90,145);controls.target.set(0,15,0)};
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('dblclick',e=>{if(inRoom)return;mouse.x=e.clientX/innerWidth*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(clickable.map(c=>c.obj),true);if(hits.length){let target=hits[0].object;let item=clickable.find(c=>c.obj===target||c.obj===target.parent);if(item){if(item.label==='Istana Evermere')enterRoom('Throne Hall');else notify('Area: '+item.label+' — jelajahi dari dekat')}}});
+let clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();for(const p of people){p.position.x+=Math.sin(t*.7+p.userData.phase)*.006;p.position.z+=Math.cos(t*.6+p.userData.phase)*.006;for(let i=0;i<p.children.length;i++){if(p.children[i].userData.partName==='villager arm')p.children[i].rotation.x=Math.sin(t*3+p.userData.phase)*.12}}
+carts.forEach((c,i)=>{c.g.position.x+=.035;if(c.g.position.x>135)c.g.position.x=-135;c.horse.rotation.y=Math.sin(t*5+i)*.035});
+controls.update();renderer.render(scene,camera)}
+document.querySelector('#count').textContent='Bagian '+parts.length;document.querySelector('#people').textContent=people.length+' penduduk';document.querySelector('#carriages').textContent=carts.length+' kereta';
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+animate();
+</script>
+</body>
+</html>

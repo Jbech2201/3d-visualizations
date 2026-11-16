@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASTREMA ROYAL UNIVERSE — The Kingdom of Eternal Elegance (3D Interactive World)</title>
+  <style>
+    :root {
+      --bg: #080b14;
+      --panel: rgba(14, 18, 32, 0.80);
+      --panel-hover: rgba(26, 33, 56, 0.92);
+      --border: rgba(245, 200, 107, 0.28);
+      --border-strong: rgba(245, 200, 107, 0.65);
+      --gold: #f5c86b;
+      --gold-soft: #fde68a;
+      --rose: #f472b6;
+      --azure: #38bdf8;
+      --emerald: #34d399;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #080b14; color: var(--text); font-family: var(--sans);
+      user-select: none;
+    }
+
+    #canvas-wrap { position: fixed; inset: 0; z-index: 1; }
+
+    .glass {
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    /* Top Royal Header */
+    .top-bar {
+      position: fixed; top: 14px; left: 14px; right: 14px; z-index: 20;
+      padding: 8px 14px;
+      display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px;
+    }
+
+    .crest { display: flex; align-items: center; gap: 12px; }
+    .crest-emblem {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(245, 200, 107, 0.28), rgba(168, 85, 247, 0.25));
+      border: 1px solid var(--border-strong);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--gold-soft);
+      text-shadow: 0 0 12px rgba(245, 200, 107, 0.55);
+    }
+    .crest h1 {
+      font-family: var(--serif); font-size: 15px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-soft);
+    }
+    .crest p {
+      font-size: 10.5px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.05em; margin-top: 2px;
+    }
+
+    .mood-bar, .nav-mode-bar { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
+
+    .royal-btn {
+      padding: 6px 9px; border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap;
+      cursor: pointer; outline: none; transition: all 0.18s ease;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .royal-btn:hover {
+      background: var(--panel-hover); color: #fff; border-color: var(--gold);
+      transform: translateY(-1px);
+    }
+    .royal-btn.active {
+      background: linear-gradient(135deg, rgba(245, 200, 107, 0.30), rgba(180, 83, 9, 0.30));
+      color: #fffbeb; border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(245, 200, 107, 0.28);
+    }
+    .royal-btn.cutaway-on {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.32), rgba(59, 130, 246, 0.28));
+      border-color: var(--azure); color: #fff;
+    }
+
+    /* Left Navigation Drawer: Locations & Palace Interiors */
+    .left-nav {
+      position: fixed; top: 84px; left: 14px; bottom: 14px; width: 278px; z-index: 15;
+      padding: 13px; display: flex; flex-direction: column; gap: 11px; overflow-y: auto;
+      transition: transform 0.24s ease;
+    }
+    .left-nav.collapsed { transform: translateX(-296px); }
+
+    .drawer-pill {
+      position: fixed; top: 90px; left: 14px; z-index: 16;
+      padding: 7px 11px; font-size: 11px; font-family: var(--mono); color: var(--gold-soft);
+      cursor: pointer; display: none;
+    }
+    .left-nav.collapsed + .drawer-pill { display: block; }
+
+    .sec-head {
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold);
+      margin-bottom: 5px;
+    }
+
+    .loc-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .loc-btn {
+      width: 100%; text-align: left; padding: 7px 10px; border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.50); color: #e2e8f0;
+      font-size: 11.5px; font-weight: 500; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: all 0.14s ease;
+    }
+    .loc-btn:hover { background: rgba(30, 41, 59, 0.85); border-color: rgba(245, 200, 107, 0.45); }
+    .loc-btn.active {
+      background: rgba(245, 200, 107, 0.18); border-color: var(--gold); color: #fffbeb; font-weight: 600;
+    }
+    .loc-tag {
+      font-family: var(--mono); font-size: 9px; padding: 2px 5px; border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08); color: var(--gold-soft);
+    }
+
+    /* Right Lore & World Telemetry Panel */
+    .right-panel {
+      position: fixed; top: 84px; right: 14px; width: 278px; z-index: 15;
+      padding: 13px; display: flex; flex-direction: column; gap: 11px;
+      max-height: calc(100vh - 102px); overflow-y: auto;
+    }
+
+    .lore-box {
+      padding: 10px 11px; border-radius: 9px;
+      background: rgba(8, 12, 24, 0.65); border: 1px solid rgba(245, 200, 107, 0.22);
+    }
+    .lore-title {
+      font-family: var(--serif); font-size: 14px; font-weight: 700; color: var(--gold-soft);
+      margin-bottom: 4px;
+    }
+    .lore-text { font-size: 11.5px; line-height: 1.48; color: #cbd5e1; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .stat-card {
+      padding: 7px 9px; border-radius: 8px;
+      background: rgba(15, 23, 42, 0.58); border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    .stat-card .k { font-family: var(--mono); font-size: 9px; color: #94a3b8; text-transform: uppercase; }
+    .stat-card .v { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--gold-soft); margin-top: 2px; }
+
+    .bottom-hint {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+      z-index: 12; padding: 6px 15px; border-radius: 999px;
+      font-family: var(--mono); font-size: 11px; color: var(--muted); pointer-events: none;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: rgba(245, 200, 107, 0.30); border-radius: 4px; }
+
+    @media (max-width: 1120px) {
+      .left-nav, .right-panel { width: 235px; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <!-- Top HUD: Branding, 5 Atmospheric Moods & Navigation Modes -->
+  <header class="top-bar glass">
+    <div class="crest">
+      <div class="crest-emblem">♛</div>
+      <div>
+        <h1>Astrema Royal Universe</h1>
+        <p>THE KINGDOM OF ETERNAL ELEGANCE // LIVING 3D FANTASY REALM</p>
+      </div>
+    </div>
+
+    <div class="mood-bar" id="mood-bar" aria-label="Lighting & Atmospheric Moods">
+      <button class="royal-btn" data-mood="morning" id="btn-mood-morning">☀ Morning</button>
+      <button class="royal-btn" data-mood="afternoon" id="btn-mood-afternoon">🌤 Afternoon</button>
+      <button class="royal-btn active" data-mood="golden" id="btn-mood-golden">🌅 Golden Hour</button>
+      <button class="royal-btn" data-mood="evening" id="btn-mood-evening">🌆 Evening</button>
+      <button class="royal-btn" data-mood="night" id="btn-mood-night">✨ Starry Night</button>
+    </div>
+
+    <div class="nav-mode-bar">
+      <button class="royal-btn active" data-nav="orbit" id="btn-nav-orbit">Orbit</button>
+      <button class="royal-btn" data-nav="walk" id="btn-nav-walk">Walk (WASD)</button>
+      <button class="royal-btn" data-nav="carriage" id="btn-nav-carriage">Carriage Tour</button>
+      <button class="royal-btn" id="btn-palace-cutaway">Palace Cutaway</button>
+    </div>
+  </header>
+
+  <!-- Left Drawer: Capital Districts & 7 Palace Interior Chambers -->
+  <aside class="left-nav glass" id="left-nav">
+    <div class="sec-head">
+      <span>Kingdom &amp; Districts</span>
+      <button class="royal-btn" style="padding:2px 7px;font-size:10px;" id="btn-hide-nav">Hide</button>
+    </div>
+    <div class="loc-list" id="district-list"></div>
+
+    <div class="sec-head" style="margin-top:6px;">
+      <span>Royal Palace Interiors (7)</span>
+    </div>
+    <div class="loc-list" id="interior-list"></div>
+  </aside>
+  <button class="drawer-pill glass" id="btn-show-nav">Locations ▸</button>
+
+  <!-- Right Panel: Location Lore & Live Kingdom Telemetry -->
+  <aside class="right-panel glass">
+    <div class="lore-box">
+      <div class="lore-title" id="lore-title">Astrema Royal Capital</div>
+      <div class="lore-text" id="lore-text">
+        Welcome to the Kingdom of Eternal Elegance. Explore the towering Royal Palace, 7 richly furnished interior chambers, 5 bustling capital districts, crystal river bridges, and misty alpine valleys.
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-head">Kingdom Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="k">Buildings &amp; Stalls</div><div class="v" id="st-buildings">0</div></div>
+        <div class="stat-card"><div class="k">Palace Towers</div><div class="v" id="st-towers">0</div></div>
+        <div class="stat-card"><div class="k">Interior Chambers</div><div class="v" id="st-rooms">7</div></div>
+        <div class="stat-card"><div class="k">Citizens &amp; Guards</div><div class="v" id="st-citizens">0</div></div>
+        <div class="stat-card"><div class="k">Carriages &amp; Boats</div><div class="v" id="st-vehicles">0</div></div>
+        <div class="stat-card"><div class="k">Trees &amp; Flowers</div><div class="v" id="st-nature">0</div></div>
+      </div>
+    </div>
+
+    <div class="lore-box" style="font-size:11px;color:#94a3b8;line-height:1.45;">
+      <strong style="color:var(--gold-soft);">Tip:</strong> Toggle <strong style="color:#fff;">Palace Cutaway</strong> to lift the palace roofs and inspect all 7 interior chambers from above, or click any chamber on the left to step right inside.
+    </div>
+  </aside>
+
+  <div class="bottom-hint glass" id="bottom-hint">
+    Drag to Orbit · Scroll to Zoom · Right-Drag to Pan · Click Locations or Switch Moods (Morning → Night)
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    // =========================================================================
+    // 1. RENDERER, SCENE & CAMERA SETUP
+    // =========================================================================
+    const wrap = document.getElementById('canvas-wrap');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.06;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
+    wrap.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xe9c496, 0.0020);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.55;
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.4, 950);
+    camera.position.set(52, 54, 96);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.065;
+    controls.maxDistance = 320;
+    controls.minDistance = 2.0;
+    controls.maxPolarAngle = Math.PI * 0.492;
+    controls.target.set(0, 14, -52);
+
+    // =========================================================================
+    // 2. SKY DOME SHADER & LIGHTING RIG (5 ATMOSPHERIC MOODS)
+    // =========================================================================
+    const skyUniforms = {
+      uTopColor:    { value: new THREE.Color(0x2e5894) },
+      uHorizColor:  { value: new THREE.Color(0xf6bd78) },
+      uSunDir:      { value: new THREE.Vector3(0.45, 0.30, -0.84).normalize() },
+      uSunColor:    { value: new THREE.Color(0xffdfa0) },
+      uStarAlpha:   { value: 0.0 },
+      uTime:        { value: 0.0 }
+    };
+
+    const skyDome = new THREE.Mesh(
+      new THREE.SphereGeometry(440, 32, 24),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: skyUniforms,
+        vertexShader: `
+          varying vec3 vWorldDir;
+          void main() {
+            vWorldDir = normalize(position);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uTopColor;
+          uniform vec3 uHorizColor;
+          uniform vec3 uSunDir;
+          uniform vec3 uSunColor;
+          uniform float uStarAlpha;
+          uniform float uTime;
+          varying vec3 vWorldDir;
+
+          float hash(vec3 p) {
+            p = fract(p * 0.3183099 + 0.1);
+            p *= 17.0;
+            return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+          }
+
+          void main() {
+            vec3 d = normalize(vWorldDir);
+            float h = clamp(d.y * 1.15 + 0.06, 0.0, 1.0);
+            vec3 col = mix(uHorizColor, uTopColor, pow(h, 0.62));
+            float sunAmt = max(dot(d, normalize(uSunDir)), 0.0);
+            col += uSunColor * (pow(sunAmt, 12.0) * 0.42 + pow(sunAmt, 160.0) * 1.35);
+
+            if (uStarAlpha > 0.01 && d.y > 0.04) {
+              vec3 grid = floor(d * 210.0);
+              float s = hash(grid);
+              if (s > 0.992) {
+                float twinkle = 0.6 + 0.4 * sin(uTime * 2.5 + s * 100.0);
+                col += vec3(0.92, 0.95, 1.0) * uStarAlpha * twinkle * smoothstep(0.04, 0.25, d.y);
+              }
+            }
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      })
+    );
+    scene.add(skyDome);
+
+    const hemiLight = new THREE.HemisphereLight(0xffeedd, 0x3b4a5e, 0.85);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffdca8, 2.45);
+    sunLight.position.set(70, 52, -110);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(1024, 1024);
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 380;
+    sunLight.shadow.camera.left = -145;
+    sunLight.shadow.camera.right = 145;
+    sunLight.shadow.camera.top = 145;
+    sunLight.shadow.camera.bottom = -145;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0x9ec5ff, 0.55);
+    fillLight.position.set(-80, 45, 90);
+    scene.add(fillLight);
+
+    // Volumetric Sunbeam God-Rays streaming across the Palace & Capital
+    const godRaysGroup = new THREE.Group();
+    const rayMat = new THREE.MeshBasicMaterial({
+      color: 0xffd584,
+      transparent: true,
+      opacity: 0.075,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    for (let i = 0; i < 6; i++) {
+      const ray = new THREE.Mesh(new THREE.ConeGeometry(20 + i * 3, 180, 16, 1, true), rayMat);
+      ray.position.set(-45 + i * 22, 62, -65 + (i % 2) * 28);
+      ray.rotation.z = -0.35;
+      ray.rotation.x = 0.45;
+      godRaysGroup.add(ray);
+    }
+    scene.add(godRaysGroup);
+
+    // =========================================================================
+    // 3. PROCEDURAL HIGH-RES PBR TEXTURE & MATERIAL LIBRARY (14+ MATERIALS)
+    // =========================================================================
+    function makeTex(w, h, drawFn, repX = 1, repY = 1, isColor = true) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      drawFn(ctx, w, h);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repX, repY);
+      tex.anisotropy = 8;
+      if (isColor) tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // 1. Cream Limestone Ashlar Texture + Bump
+    const limestoneTex = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#f3ead8';
+      ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 32) {
+        const off = (y / 32) % 2 === 0 ? 0 : 32;
+        for (let x = -32; x < w; x += 64) {
+          const shade = 232 + Math.floor(Math.sin(x * 0.13 + y * 0.07) * 10);
+          ctx.fillStyle = `rgb(${shade},${shade - 10},${shade - 26})`;
+          ctx.fillRect(x + off + 1, y + 1, 62, 30);
+        }
+        ctx.strokeStyle = 'rgba(148, 132, 108, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+    }, 3, 3, true);
+
+    const limestoneBump = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#c8c8c8'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#404040'; ctx.lineWidth = 3;
+      for (let y = 0; y < h; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        const off = (y / 32) % 2 === 0 ? 0 : 32;
+        for (let x = -32; x < w; x += 64) {
+          ctx.beginPath(); ctx.moveTo(x + off, y); ctx.lineTo(x + off, y + 32); ctx.stroke();
+        }
+      }
+    }, 3, 3, false);
+
+    // 2. Ivory Veined Marble
+    const ivoryMarbleTex = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#faf6ee';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(186, 168, 138, 0.25)';
+      for (let i = 0; i < 24; i++) {
+        ctx.lineWidth = 1 + (i % 3);
+        ctx.beginPath();
+        let x = (i * 43) % w, y = 0;
+        ctx.moveTo(x, y);
+        for (let s = 0; s < 10; s++) {
+          x += Math.sin(i + s) * 28;
+          y += h / 10;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }, 2, 2, true);
+
+    // 3. Inlaid Palace Marble Floor (Geometric Royal Stars & Gold Borders)
+    const palaceFloorTex = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#f8f3e8'; ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 128) {
+        for (let x = 0; x < w; x += 128) {
+          ctx.fillStyle = ((x + y) / 128) % 2 === 0 ? '#f6efe0' : '#e4d5ba';
+          ctx.fillRect(x, y, 128, 128);
+          ctx.strokeStyle = '#cfa349'; ctx.lineWidth = 3;
+          ctx.strokeRect(x + 4, y + 4, 120, 120);
+          ctx.fillStyle = '#d4af37';
+          ctx.beginPath(); ctx.arc(x + 64, y + 64, 12, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }, 4, 4, true);
+
+    // 4. Cobblestone Street Texture + Bump
+    const cobbleTex = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#4a4e59'; ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 24) {
+        const off = (y / 24) % 2 === 0 ? 0 : 16;
+        for (let x = -16; x < w; x += 32) {
+          const v = 110 + Math.floor(Math.sin(x * 0.37 + y * 0.51) * 24);
+          ctx.fillStyle = `rgb(${v + 8},${v + 4},${v})`;
+          ctx.beginPath();
+          ctx.roundRect(x + off + 2, y + 2, 28, 20, 6);
+          ctx.fill();
+        }
+      }
+    }, 18, 18, true);
+
+    const cobbleBump = makeTex(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#202020'; ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 24) {
+        const off = (y / 24) % 2 === 0 ? 0 : 16;
+        for (let x = -16; x < w; x += 32) {
+          ctx.fillStyle = '#e0e0e0';
+          ctx.beginPath(); ctx.roundRect(x + off + 3, y + 3, 26, 18, 5); ctx.fill();
+        }
+      }
+    }, 18, 18, false);
+
+    // 5. Handcrafted Scalloped Ceramic Rooftile Texture
+    function makeRoofTileTex(baseHex, accentHex) {
+      return makeTex(256, 256, (ctx, w, h) => {
+        ctx.fillStyle = baseHex; ctx.fillRect(0, 0, w, h);
+        for (let y = 0; y < h; y += 24) {
+          const off = (y / 24) % 2 === 0 ? 0 : 16;
+          for (let x = -16; x < w; x += 32) {
+            ctx.fillStyle = accentHex;
+            ctx.beginPath();
+            ctx.arc(x + off + 16, y + 12, 14, 0, Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.16)';
+            ctx.lineWidth = 2; ctx.stroke();
+          }
+        }
+      }, 4, 4, true);
+    }
+
+    // 6. Intricate Stained Glass Window Texture (Ruby, Sapphire, Gold & Emerald)
+    const stainedGlassTex = makeTex(256, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+      const colors = ['#f59e0b', '#ec4899', '#38bdf8', '#10b981', '#a855f7'];
+      for (let y = 24; y < h - 24; y += 44) {
+        for (let x = 24; x < w - 24; x += 44) {
+          ctx.fillStyle = colors[(x + y) % colors.length];
+          ctx.beginPath();
+          ctx.moveTo(x + 20, y); ctx.lineTo(x + 40, y + 20);
+          ctx.lineTo(x + 20, y + 40); ctx.lineTo(x, y + 20);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 3; ctx.stroke();
+        }
+      }
+      // Rose medallion at top
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath(); ctx.arc(w / 2, 86, 58, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ec4899';
+      ctx.beginPath(); ctx.arc(w / 2, 86, 36, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath(); ctx.arc(w / 2, 86, 18, 0, Math.PI * 2); ctx.fill();
+    }, 1, 1, true);
+
+    // 7. Classical Fresco Ceiling Texture
+    const frescoTex = makeTex(512, 512, (ctx, w, h) => {
+      const grad = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, 260);
+      grad.addColorStop(0, '#fef3c7');
+      grad.addColorStop(0.5, '#93c5fd');
+      grad.addColorStop(0.88, '#c084fc');
+      grad.addColorStop(1, '#b45309');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#d97706'; ctx.lineWidth = 14;
+      ctx.strokeRect(18, 18, w - 36, h - 36);
+      ctx.beginPath(); ctx.arc(w / 2, h / 2, 165, 0, Math.PI * 2); ctx.stroke();
+      // Cloud swirls
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(w / 2 + Math.cos(a) * 120, h / 2 + Math.sin(a) * 120, 28, 0, Math.PI * 2); ctx.fill();
+      }
+    }, 1, 1, true);
+
+    // 8. Half-Timbered Plaster & Townhouse Facade Windows Texture
+    const plasterTex = makeTex(256, 256, (ctx, w, h) => {
+      ctx.fillStyle = '#f7efe2'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(180, 160, 130, 0.08)';
+      for (let i = 0; i < 600; i++) {
+        ctx.fillRect((i * 73) % w, (i * 131) % h, 4, 4);
+      }
+      ctx.strokeStyle = '#6b4226'; ctx.lineWidth = 10;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+      ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    }, 1, 2, true);
+
+    // 9. Carved Oak Wood Grain
+    const woodTex = makeTex(256, 256, (ctx, w, h) => {
+      ctx.fillStyle = '#6b3f21'; ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 4) {
+        ctx.fillStyle = y % 8 === 0 ? 'rgba(42,20,8,0.25)' : 'rgba(155,95,50,0.16)';
+        ctx.fillRect(0, y, w, 3);
+      }
+    }, 2, 2, true);
+
+    const MATS = {
+      limestone: new THREE.MeshStandardMaterial({
+        map: limestoneTex, bumpMap: limestoneBump, bumpScale: 0.14, roughness: 0.62, metalness: 0.04
+      }),
+      ivoryMarble: new THREE.MeshPhysicalMaterial({
+        map: ivoryMarbleTex, roughness: 0.24, metalness: 0.05, clearcoat: 0.45, clearcoatRoughness: 0.18
+      }),
+      palaceFloor: new THREE.MeshPhysicalMaterial({
+        map: palaceFloorTex, roughness: 0.14, metalness: 0.08, clearcoat: 0.85, clearcoatRoughness: 0.08
+      }),
+      weatheredStone: new THREE.MeshStandardMaterial({
+        map: limestoneTex, bumpMap: limestoneBump, bumpScale: 0.22, color: 0xb6b2a8, roughness: 0.82, metalness: 0.05
+      }),
+      cobble: new THREE.MeshStandardMaterial({
+        map: cobbleTex, bumpMap: cobbleBump, bumpScale: 0.18, roughness: 0.72, metalness: 0.08
+      }),
+      gold: new THREE.MeshStandardMaterial({
+        color: 0xf5c851, emissive: 0x3b2404, emissiveIntensity: 0.18, roughness: 0.22, metalness: 0.92
+      }),
+      wroughtIron: new THREE.MeshStandardMaterial({
+        color: 0x1e2430, roughness: 0.42, metalness: 0.82
+      }),
+      stainedGlass: new THREE.MeshPhysicalMaterial({
+        map: stainedGlassTex, emissiveMap: stainedGlassTex, emissive: 0xffffff, emissiveIntensity: 0.65,
+        roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.92
+      }),
+      fresco: new THREE.MeshStandardMaterial({
+        map: frescoTex, roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide
+      }),
+      wood: new THREE.MeshStandardMaterial({
+        map: woodTex, roughness: 0.44, metalness: 0.08
+      }),
+      velvetCrimson: new THREE.MeshPhysicalMaterial({
+        color: 0x8b122b, roughness: 0.85, metalness: 0.02, sheen: 0.9, sheenColor: new THREE.Color(0xf43f5e)
+      }),
+      silkRoyal: new THREE.MeshPhysicalMaterial({
+        color: 0x1e40af, roughness: 0.45, metalness: 0.12, sheen: 0.85, sheenColor: new THREE.Color(0x93c5fd)
+      }),
+      crystal: new THREE.MeshPhysicalMaterial({
+        color: 0xe0f7ff, emissive: 0xffe4a0, emissiveIntensity: 1.15, roughness: 0.06, metalness: 0.1,
+        transparent: true, opacity: 0.88
+      }),
+      conservatoryGlass: new THREE.MeshPhysicalMaterial({
+        color: 0xdbeafe, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.36, side: THREE.DoubleSide
+      }),
+      roofRose:      new THREE.MeshStandardMaterial({ map: makeRoofTileTex('#be5c7e', '#9c3f60'), roughness: 0.45, metalness: 0.1 }),
+      roofLavender:  new THREE.MeshStandardMaterial({ map: makeRoofTileTex('#7c69b2', '#5b4a90'), roughness: 0.45, metalness: 0.1 }),
+      roofAzure:     new THREE.MeshStandardMaterial({ map: makeRoofTileTex('#4076b0', '#2b578a'), roughness: 0.45, metalness: 0.1 }),
+      roofMint:      new THREE.MeshStandardMaterial({ map: makeRoofTileTex('#3b8d7e', '#266b5e'), roughness: 0.45, metalness: 0.1 }),
+      roofTerracotta:new THREE.MeshStandardMaterial({ map: makeRoofTileTex('#c26845', '#994c2d'), roughness: 0.52, metalness: 0.05 }),
+      plaster:       new THREE.MeshStandardMaterial({ map: plasterTex, roughness: 0.78, metalness: 0.02 }),
+      windowGlow:    new THREE.MeshStandardMaterial({ color: 0xffebb8, emissive: 0xffb74d, emissiveIntensity: 0.65, roughness: 0.2 }),
+      lanternGlow:   new THREE.MeshBasicMaterial({ color: 0xffdc80 })
+    };
+
+    // Track world stats & animated objects
+    const worldStats = {
+      buildings: 0,
+      palaceTowers: 0,
+      interiorRooms: 7,
+      citizens: 0,
+      vehicles: 0,
+      trees: 0,
+      flowers: 0
+    };
+    const animatedWalkers = [];
+    const animatedCarriages = [];
+    const animatedBoats = [];
+    const chandelierLights = [];
+    const cityStreetLights = [];
+    const waterfallParticles = [];
+    let skyLanternMesh = null;
+    let skyLanternData = [];
+    const palaceCutawayTargets = [];
+
+    // Deterministic Pseudo-Random Helper
+    let seed = 13579;
+    function rand() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    }
+
+    // =========================================================================
+    // 4. WORLD GEOGRAPHY: RIVER, TERRAIN HILLS, MOUNTAINS & WATERFALLS
+    // =========================================================================
+    function getRiverCenterZ(x) {
+      return 4.0 + 7.0 * Math.sin(x * 0.020);
+    }
+
+    function getTerrainHeight(x, z) {
+      // Flat Capital City Basin & Royal Avenue
+      const distCenter = Math.hypot(x, z);
+      if (z >= -135 && z <= -60 && Math.abs(x) <= 58) {
+        return 18.0; // Royal Acropolis Plateau
+      }
+      if (distCenter < 115) {
+        return 0.0;
+      }
+      // Rolling emerald valley hills surrounding Astrema
+      const t = Math.min(1.0, (distCenter - 115) / 80.0);
+      const wave = 8.5 * Math.sin(x * 0.025) * Math.cos(z * 0.025) + 6.0 * Math.sin(x * 0.012 - z * 0.015);
+      // Distant alpine mountain ring beyond radius 185
+      let mtn = 0.0;
+      if (distCenter > 175) {
+        const mt = (distCenter - 175) / 95.0;
+        const ridge = Math.abs(Math.sin(Math.atan2(z, x) * 7.0)) * 0.65 + 0.35;
+        mtn = (mt ** 1.35) * 85.0 * ridge;
+      }
+      return Math.max(0.0, t * (10.0 + wave) + mtn);
+    }
+
+    // Build Valley & Mountain Terrain Mesh
+    {
+      const segs = 96;
+      const tGeom = new THREE.PlaneGeometry(580, 580, segs, segs);
+      tGeom.rotateX(-Math.PI / 2);
+      const pos = tGeom.attributes.position;
+      const colors = new Float32Array(pos.count * 3);
+      const cGrass = new THREE.Color(0x4b8f4c);
+      const cHill = new THREE.Color(0x3a7748);
+      const cRock = new THREE.Color(0x6b6f78);
+      const cSnow = new THREE.Color(0xf4f7fc);
+      const tmpC = new THREE.Color();
+
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        const rz = getRiverCenterZ(x);
+        const inRiver = Math.abs(z - rz) < 9.5;
+        const inLakeL = Math.hypot(x + 44, z + 56) < 20;
+        const inLakeR = Math.hypot(x - 44, z + 56) < 20;
+
+        let y = 0.0;
+        if (inRiver || inLakeL || inLakeR) {
+          y = -3.4;
+        } else {
+          // Skip lifting the Acropolis footprint here (we build stone bastion walls separately)
+          const distCenter = Math.hypot(x, z);
+          if (distCenter >= 115) y = getTerrainHeight(x, z);
+        }
+        pos.setY(i, y);
+
+        if (y < -1.0) tmpC.setHex(0x3b4d4a);
+        else if (y > 48) tmpC.copy(cSnow);
+        else if (y > 26) tmpC.copy(cRock).lerp(cSnow, (y - 26) / 26);
+        else tmpC.copy(cGrass).lerp(cHill, Math.min(1, y / 18));
+        colors[i * 3] = tmpC.r;
+        colors[i * 3 + 1] = tmpC.g;
+        colors[i * 3 + 2] = tmpC.b;
+      }
+      tGeom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      tGeom.computeVertexNormals();
+      const terrainMesh = new THREE.Mesh(
+        tGeom,
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.02 })
+      );
+      terrainMesh.receiveShadow = true;
+      scene.add(terrainMesh);
+    }
+
+    // Capital Cobblestone Plaza Ground
+    {
+      const northPlaza = new THREE.Mesh(new THREE.BoxGeometry(196, 0.4, 58), MATS.cobble);
+      northPlaza.position.set(0, -0.15, -35);
+      northPlaza.receiveShadow = true;
+      scene.add(northPlaza);
+
+      const southPlaza = new THREE.Mesh(new THREE.BoxGeometry(196, 0.4, 86), MATS.cobble);
+      southPlaza.position.set(0, -0.15, 57);
+      southPlaza.receiveShadow = true;
+      scene.add(southPlaza);
+
+      // Grand Royal Avenue (X=0 from South Gate Z=98 through Ceremonial Square)
+      const avenue = new THREE.Mesh(new THREE.BoxGeometry(14, 0.45, 160), MATS.ivoryMarble);
+      avenue.position.set(0, -0.12, 20);
+      avenue.receiveShadow = true;
+      scene.add(avenue);
+    }
+
+    // Crystal River & Twin Lakes Water Surface
+    const waterMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1d8fb8,
+      roughness: 0.08,
+      metalness: 0.18,
+      transparent: true,
+      opacity: 0.86,
+      clearcoat: 1.0
+    });
+    const waterPlane = new THREE.Mesh(new THREE.PlaneGeometry(560, 140), waterMat);
+    waterPlane.rotation.x = -Math.PI / 2;
+    waterPlane.position.set(0, -1.55, -16);
+    waterPlane.receiveShadow = true;
+    scene.add(waterPlane);
+
+    // Royal Acropolis Bastion Plateau (Y=0 to 18) + Twin Waterfalls
+    {
+      const acropolis = new THREE.Mesh(new THREE.BoxGeometry(114, 18.2, 76), MATS.limestone);
+      acropolis.position.set(0, 8.9, -98);
+      acropolis.castShadow = true;
+      acropolis.receiveShadow = true;
+      scene.add(acropolis);
+
+      // Palace Courtyard Cobblestone / Marble Deck at Y=18.0
+      const acDeck = new THREE.Mesh(new THREE.BoxGeometry(112, 0.3, 74), MATS.ivoryMarble);
+      acDeck.position.set(0, 18.02, -98);
+      acDeck.receiveShadow = true;
+      scene.add(acDeck);
+
+      // Retaining Bastion Corner Towers on cliff front
+      for (const sx of [-56, 56]) {
+        const bTower = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 6.2, 20, 16), MATS.weatheredStone);
+        bTower.position.set(sx, 9.5, -61);
+        bTower.castShadow = true;
+        scene.add(bTower);
+      }
+
+      // Monumental Grand Royal Staircase ascending from Ceremonial Square (Z=-36, Y=0) up to Palace Courtyard (Z=-61, Y=18)
+      const steps = 30;
+      for (let i = 0; i < steps; i++) {
+        const t = i / steps;
+        const step = new THREE.Mesh(new THREE.BoxGeometry(14 - t * 2, 0.7, 1.1), MATS.ivoryMarble);
+        step.position.set(0, 0.35 + t * 17.6, -37.5 - t * 24.5);
+        step.castShadow = true;
+        step.receiveShadow = true;
+        scene.add(step);
+      }
+      // Golden balustrades along staircase
+      for (const sx of [-6.8, 6.8]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.4, 29), MATS.gold);
+        rail.position.set(sx, 9.5, -49.5);
+        rail.rotation.x = 0.62;
+        scene.add(rail);
+      }
+
+      // Twin Cascading Waterfalls pouring off left & right Acropolis flanks (X = +-44, Z = -61)
+      const wfMat = new THREE.MeshPhysicalMaterial({
+        color: 0xbae6fd, emissive: 0x38bdf8, emissiveIntensity: 0.28,
+        transparent: true, opacity: 0.78, roughness: 0.15
+      });
+      for (const side of [-1, 1]) {
+        const wf = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 5.2, 20.5, 16, 1, true, -0.4, Math.PI + 0.8), wfMat);
+        wf.position.set(side * 44, 8.2, -59.5);
+        scene.add(wf);
+        // Animated splash mist particles at lake surface
+        for (let p = 0; p < 14; p++) {
+          const mist = new THREE.Mesh(
+            new THREE.SphereGeometry(0.9 + rand() * 0.9, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.45 })
+          );
+          mist.position.set(side * 44 + (rand() - 0.5) * 6, -1.2 + rand() * 2.5, -57 + (rand() - 0.5) * 5);
+          scene.add(mist);
+          waterfallParticles.push({ mesh: mist, baseX: side * 44, baseZ: -57, phase: rand() * Math.PI * 2 });
+        }
+      }
+    }
+
+    // 5 Multi-Arch Stone Bridges spanning the Crystal River
+    const bridgeXs = [0, -46, 46, -96, 96];
+    bridgeXs.forEach((bx, idx) => {
+      const bz = getRiverCenterZ(bx);
+      const bGrp = new THREE.Group();
+      const bW = idx === 0 ? 14 : 9.5;
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(bW, 0.9, 23), MATS.ivoryMarble);
+      deck.position.y = 0.55;
+      deck.castShadow = true;
+      deck.receiveShadow = true;
+      bGrp.add(deck);
+
+      // Stone arch piers & golden lantern posts
+      for (const pz of [-8.5, 0, 8.5]) {
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.8, 3.8, 2.2), MATS.weatheredStone);
+        pier.position.set(0, -1.2, pz);
+        bGrp.add(pier);
+      }
+      for (const sx of [-bW / 2 + 0.4, bW / 2 - 0.4]) {
+        const parapet = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.1, 23), MATS.limestone);
+        parapet.position.set(sx, 1.35, 0);
+        bGrp.add(parapet);
+        for (const lz of [-9, 0, 9]) {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 2.4, 8), MATS.gold);
+          post.position.set(sx, 2.5, lz);
+          const orb = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 10), MATS.lanternGlow);
+          orb.position.set(sx, 3.8, lz);
+          bGrp.add(post, orb);
+        }
+      }
+      bGrp.position.set(bx, 0, bz);
+      scene.add(bGrp);
+    });
+
+    // =========================================================================
+    // 5. THE ROYAL PALACE EXTERIOR (14 TOWERS, BALCONIES, BRIDGES & GARDENS)
+    // =========================================================================
+    const palaceGroup = new THREE.Group();
+    palaceGroup.position.set(0, 18.1, -100);
+    scene.add(palaceGroup);
+
+    function addTower(x, y, z, r, h, spireH, roofMat, hasGallery = true) {
+      const tGrp = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.07, h, 20), MATS.limestone);
+      shaft.position.y = h / 2;
+      shaft.castShadow = true; shaft.receiveShadow = true;
+      tGrp.add(shaft);
+
+      // Ornamental gold cornice ring
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 1.03, 0.25, 8, 24), MATS.gold);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = h;
+      tGrp.add(ring);
+
+      if (hasGallery) {
+        const corbel = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.24, r * 1.0, 1.8, 20), MATS.ivoryMarble);
+        corbel.position.y = h - 0.6;
+        tGrp.add(corbel);
+        // Arched stained-glass windows around upper turret
+        for (let a = 0; a < 4; a++) {
+          const ang = (a / 4) * Math.PI * 2;
+          const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.8, 0.4), MATS.stainedGlass);
+          win.position.set(Math.sin(ang) * (r + 0.05), h * 0.68, Math.cos(ang) * (r + 0.05));
+          win.rotation.y = ang;
+          tGrp.add(win);
+        }
+      }
+
+      // Pointed pastel fairytale spire + golden finial
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(r * 1.26, spireH, 20), roofMat);
+      spire.position.y = h + spireH / 2 + 0.2;
+      spire.castShadow = true;
+      tGrp.add(spire);
+
+      const finial = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.22, 3.2, 8), MATS.gold);
+      finial.position.y = h + spireH + 1.5;
+      tGrp.add(finial);
+
+      tGrp.position.set(x, y, z);
+      palaceGroup.add(tGrp);
+      worldStats.palaceTowers++;
+      worldStats.buildings++;
+    }
+
+    // 14 Distinct Palace Towers creating an iconic Disney/Tangled fairytale silhouette!
+    addTower(0, 12, -4, 5.2, 26, 18, MATS.roofAzure);           // 1. Grand Sovereign Central Spire (Apex ~Y=75!)
+    addTower(-8, 8, 2, 3.2, 19, 12, MATS.roofRose);             // 2. Keep Front-West Turret
+    addTower(8, 8, 2, 3.2, 19, 12, MATS.roofRose);              // 3. Keep Front-East Turret
+    addTower(-9, 8, -11, 3.4, 21, 13, MATS.roofLavender);       // 4. Keep North-West Turret
+    addTower(9, 8, -11, 3.4, 21, 13, MATS.roofLavender);        // 5. Keep North-East Turret
+    addTower(-8, 0, 26, 2.8, 16, 10, MATS.roofAzure);           // 6. Gatehouse West Spire
+    addTower(8, 0, 26, 2.8, 16, 10, MATS.roofAzure);            // 7. Gatehouse East Spire
+    addTower(-37, 0, 10, 3.5, 19, 12, MATS.roofRose);            // 8. Dining Wing South-West Tower
+    addTower(-37, 0, -28, 3.8, 22, 14, MATS.roofLavender);      // 9. Royal Library North-West Tower
+    addTower(37, 0, 10, 3.5, 19, 12, MATS.roofMint);             // 10. Ballroom South-East Tower
+    addTower(37, 0, -28, 3.8, 22, 14, MATS.roofAzure);          // 11. Sovereign Suite North-East Tower
+    addTower(-15, 0, -29, 2.7, 17, 10, MATS.roofRose);          // 12. West Courtyard Belvedere
+    addTower(15, 0, -29, 2.7, 17, 10, MATS.roofLavender);       // 13. East Courtyard Belvedere
+    addTower(53, 0, -4, 2.5, 15, 9, MATS.roofMint);              // 14. Conservatory Pavilion Spire
+
+    // Palace Exterior Outer Walls & Cutaway Roof Assemblies
+    function addCutawayBlock(geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      m.rotation.set(rx, ry, rz);
+      m.castShadow = true; m.receiveShadow = true;
+      palaceGroup.add(m);
+      palaceCutawayTargets.push(m);
+      return m;
+    }
+
+    // Main Entrance Gatehouse (South Front Z=+26)
+    {
+      const gateWall = new THREE.Mesh(new THREE.BoxGeometry(16, 12, 4), MATS.ivoryMarble);
+      gateWall.position.set(0, 6, 26);
+      gateWall.castShadow = true;
+      palaceGroup.add(gateWall);
+
+      const archTop = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 4.4, 20, 1, false, 0, Math.PI), MATS.gold);
+      archTop.rotation.z = Math.PI / 2;
+      archTop.rotation.y = Math.PI / 2;
+      archTop.position.set(0, 6.2, 26);
+      palaceGroup.add(archTop);
+
+      const archPortal = new THREE.Mesh(new THREE.BoxGeometry(5.6, 6.2, 4.3), MATS.wood);
+      archPortal.position.set(0, 3.1, 26);
+      palaceGroup.add(archPortal);
+
+      for (let gx = -2.4; gx <= 2.4; gx += 0.8) {
+        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6.2, 8), MATS.gold);
+        bar.position.set(gx, 3.1, 28.25);
+        palaceGroup.add(bar);
+      }
+
+      const crestGlass = new THREE.Mesh(new THREE.CircleGeometry(1.9, 20), MATS.stainedGlass);
+      crestGlass.position.set(0, 9.6, 28.08);
+      const crest = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.3, 10, 24), MATS.gold);
+      crest.position.set(0, 9.6, 28.12);
+      palaceGroup.add(crestGlass, crest);
+    }
+
+    // 3 Elevated Ornamental Viaduct Bridges linking wings across palace courtyards
+    for (const bx of [-14, 14]) {
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(9, 1.5, 4.5), MATS.ivoryMarble);
+      bridge.position.set(bx, 9.5, 8);
+      bridge.castShadow = true;
+      palaceGroup.add(bridge);
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(9, 1.0, 4.7), MATS.gold);
+      rail.position.set(bx, 10.6, 8);
+      palaceGroup.add(rail);
+    }
+    {
+      const eBridge = new THREE.Mesh(new THREE.BoxGeometry(9, 1.4, 4.2), MATS.ivoryMarble);
+      eBridge.position.set(34, 7.5, -10);
+      palaceGroup.add(eBridge);
+    }
+
+    // Royal Exterior Forecourt Fountains & Hedged Gardens (South Terrace Z=+32 in front of Gatehouse)
+    {
+      for (const fx of [-16, 16]) {
+        const basin = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.8, 0.9, 20), MATS.ivoryMarble);
+        basin.position.set(fx, 0.45, 32);
+        const water = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 0.2, 20), waterMat);
+        water.position.set(fx, 0.85, 32);
+        const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.72, 3.0, 12), MATS.gold);
+        spire.position.set(fx, 1.8, 32);
+        palaceGroup.add(basin, water, spire);
+      }
+
+      // Topiary hedges flanking forecourt terrace
+      const hedgeMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.85 });
+      for (const sx of [-26, -21, 21, 26]) {
+        const hedge = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.3, 8.0), hedgeMat);
+        hedge.position.set(sx, 0.65, 32);
+        palaceGroup.add(hedge);
+      }
+    }
+
+    // =========================================================================
+    // 6. THE 7 FURNISHED PALACE INTERIOR CHAMBERS (INSIDE PALACE WINGS)
+    // =========================================================================
+    // Helper to build each chamber's floor, side walls, stained-glass windows, and cutaway roof
+    function buildChamberShell(cx, cy, cz, w, h, d, roofMat) {
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.4, d), MATS.palaceFloor);
+      floor.position.set(cx, cy, cz);
+      floor.receiveShadow = true;
+      palaceGroup.add(floor);
+
+      // Back North wall + Side East/West walls
+      const wallN = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.6), MATS.limestone);
+      wallN.position.set(cx, cy + h / 2, cz - d / 2);
+      wallN.receiveShadow = true;
+      palaceGroup.add(wallN);
+
+      const wallW = new THREE.Mesh(new THREE.BoxGeometry(0.6, h, d), MATS.limestone);
+      wallW.position.set(cx - w / 2, cy + h / 2, cz);
+      wallW.receiveShadow = true;
+      palaceGroup.add(wallW);
+
+      const wallE = new THREE.Mesh(new THREE.BoxGeometry(0.6, h, d), MATS.limestone);
+      wallE.position.set(cx + w / 2, cy + h / 2, cz);
+      wallE.receiveShadow = true;
+      palaceGroup.add(wallE);
+
+      // Front South facade wall (lifts away in Cutaway Mode!)
+      addCutawayBlock(new THREE.BoxGeometry(w, h, 0.6), MATS.limestone, cx, cy + h / 2, cz + d / 2);
+      // Stained glass facade windows on front exterior
+      for (let wx = -w / 3; wx <= w / 3 + 0.1; wx += w / 3) {
+        addCutawayBlock(new THREE.BoxGeometry(2.2, h * 0.55, 0.8), MATS.stainedGlass, cx + wx, cy + h * 0.52, cz + d / 2);
+      }
+
+      // Frescoed interior ceiling + pitched cutaway roof
+      addCutawayBlock(new THREE.PlaneGeometry(w - 0.6, d - 0.6), MATS.fresco, cx, cy + h - 0.1, cz, Math.PI / 2, 0, 0);
+      addCutawayBlock(new THREE.ConeGeometry(Math.min(w, d) * 0.64, 6.5, 4), roofMat, cx, cy + h + 3.25, cz, 0, Math.PI / 4, 0);
+    }
+
+    const interiorPointLight = new THREE.PointLight(0xffdca0, 18, 36, 1.2);
+    interiorPointLight.position.set(0, 26, -100);
+    scene.add(interiorPointLight);
+
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0xffe29a, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+
+    function addChandelier(cx, cy, cz, scale = 1.0) {
+      const ch = new THREE.Group();
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.2, 8), MATS.gold);
+      rod.position.y = 1.1;
+      ch.add(rod);
+      for (let tier = 0; tier < 3; tier++) {
+        const rad = (1.6 - tier * 0.45) * scale;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.06, 8, 24), MATS.gold);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = -tier * 0.55;
+        ch.add(ring);
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.18 * scale), MATS.crystal);
+          gem.position.set(Math.cos(a) * rad, -tier * 0.55 - 0.22, Math.sin(a) * rad);
+          ch.add(gem);
+        }
+      }
+      const halo = new THREE.Mesh(new THREE.SphereGeometry(1.1 * scale, 10, 10), haloMat);
+      halo.position.y = -0.5;
+      ch.add(halo);
+      ch.position.set(cx, cy, cz);
+      palaceGroup.add(ch);
+    }
+
+    // CHAMBER 1: Grand Royal Throne Room (Center: 0, 0, -4, 24 x 14 x 26)
+    {
+      buildChamberShell(0, 0, -4, 24, 14, 26, MATS.roofAzure);
+      // Crimson velvet royal runner carpet
+      const runner = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.08, 22), MATS.velvetCrimson);
+      runner.position.set(0, 0.24, -4);
+      palaceGroup.add(runner);
+
+      // 12 Fluted Ivory Marble Columns with Gold Capitals
+      for (const sx of [-8.5, 8.5]) {
+        for (let cz = -14; cz <= 6; cz += 4) {
+          const col = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.68, 13.4, 16), MATS.ivoryMarble);
+          col.position.set(sx, 6.7, cz);
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 1.6), MATS.gold);
+          cap.position.set(sx, 13.5, cz);
+          palaceGroup.add(col, cap);
+        }
+      }
+      // Tall glowing stained-glass apse behind throne
+      const apse = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 0.4), MATS.stainedGlass);
+      apse.position.set(0, 7.2, -16.6);
+      palaceGroup.add(apse);
+
+      // Sovereign Golden Throne Dias & Velvet Canopy
+      const dias = new THREE.Mesh(new THREE.BoxGeometry(7.2, 1.2, 5.2), MATS.ivoryMarble);
+      dias.position.set(0, 0.6, -13.5);
+      const throneSeat = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.1, 1.6), MATS.gold);
+      throneSeat.position.set(0, 1.75, -14.2);
+      const throneBack = new THREE.Mesh(new THREE.BoxGeometry(2.1, 3.6, 0.4), MATS.velvetCrimson);
+      throneBack.position.set(0, 3.4, -14.9);
+      const canopy = new THREE.Mesh(new THREE.ConeGeometry(3.2, 2.2, 6), MATS.velvetCrimson);
+      canopy.position.set(0, 7.8, -14.0);
+      palaceGroup.add(dias, throneSeat, throneBack, canopy);
+      addChandelier(0, 12.2, -4, 1.4);
+    }
+
+    // CHAMBER 2: Magnificent Crystal Ballroom (East Wing: +24, 0, 0, 22 x 12 x 24)
+    {
+      buildChamberShell(24, 0, 0, 22, 12, 24, MATS.roofRose);
+      // Three enormous crystal chandeliers
+      addChandelier(24, 10.2, -6, 1.35);
+      addChandelier(24, 10.2, 0, 1.55);
+      addChandelier(24, 10.2, 6, 1.35);
+
+      // Arched Gilt Mirrors & Velvet Drapes along walls
+      for (let z = -8; z <= 8; z += 5.5) {
+        const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.25, 6.2, 2.8), MATS.crystal);
+        mirror.position.set(34.5, 4.5, z);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.32, 6.6, 3.2), MATS.gold);
+        frame.position.set(34.6, 4.5, z);
+        const drape = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7.0, 0.8), MATS.velvetCrimson);
+        drape.position.set(34.3, 4.5, z - 1.7);
+        palaceGroup.add(mirror, frame, drape);
+      }
+      // Upper Musicians' Balcony
+      const balcony = new THREE.Mesh(new THREE.BoxGeometry(14, 0.6, 4.0), MATS.ivoryMarble);
+      balcony.position.set(24, 6.2, -10.2);
+      const balRail = new THREE.Mesh(new THREE.BoxGeometry(14, 1.1, 0.3), MATS.gold);
+      balRail.position.set(24, 7.0, -8.3);
+      palaceGroup.add(balcony, balRail);
+    }
+
+    // CHAMBER 3: Royal Dining Hall (West Wing: -24, 0, 0, 22 x 11 x 24)
+    {
+      buildChamberShell(-24, 0, 0, 22, 11, 24, MATS.roofLavender);
+      // Exceptionally long carved walnut banquet table (16 units long!)
+      const table = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.1, 16.5), MATS.wood);
+      table.position.set(-24, 0.85, 0);
+      const runner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 16.6), MATS.gold);
+      runner.position.set(-24, 1.42, 0);
+      palaceGroup.add(table, runner);
+
+      // 20 Silk-upholstered Royal Chairs + Golden Candelabra & Feast Platters
+      for (let i = 0; i < 10; i++) {
+        const cz = -7.0 + i * 1.55;
+        for (const sx of [-2.2, 2.2]) {
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.75), MATS.silkRoyal);
+          seat.position.set(-24 + sx, 0.6, cz);
+          const back = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.5, 0.75), MATS.gold);
+          back.position.set(-24 + sx + (sx > 0 ? 0.32 : -0.32), 1.35, cz);
+          palaceGroup.add(seat, back);
+        }
+        if (i % 2 === 0) {
+          const cand = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.25, 0.9, 8), MATS.gold);
+          cand.position.set(-24, 1.85, cz);
+          const flame = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), MATS.lanternGlow);
+          flame.position.set(-24, 2.4, cz);
+          palaceGroup.add(cand, flame);
+        }
+      }
+      // Marble Hearth Fireplace
+      const hearth = new THREE.Mesh(new THREE.BoxGeometry(1.8, 4.2, 5.2), MATS.ivoryMarble);
+      hearth.position.set(-34.0, 2.1, 0);
+      const fire = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 2.8), MATS.lanternGlow);
+      fire.position.set(-33.5, 1.0, 0);
+      palaceGroup.add(hearth, fire);
+      addChandelier(-24, 9.4, -3, 1.2);
+      addChandelier(-24, 9.4, 4, 1.2);
+    }
+
+    // CHAMBER 4: Towering Royal Library (North-West Wing: -24, 0, -20, 18 x 12 x 16)
+    {
+      buildChamberShell(-24, 0, -20, 18, 12, 16, MATS.roofRose);
+      // Towering Two-Story Carved Oak Bookshelves + 1,200 Instanced Books
+      const bookGeo = new THREE.BoxGeometry(0.24, 0.55, 0.36);
+      const bookMat = new THREE.MeshStandardMaterial({ roughness: 0.6 });
+      const bookInst = new THREE.InstancedMesh(bookGeo, bookMat, 1200);
+      const bDummy = new THREE.Object3D();
+      const bookPalette = [0x991b1b, 0x1e40af, 0x047857, 0xb45309, 0x6b21a8, 0x0f766e];
+      let bIdx = 0;
+
+      for (const bx of [-31.8, -16.2]) {
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.2, 10.4, 14.2), MATS.wood);
+        shelf.position.set(bx, 5.2, -20);
+        palaceGroup.add(shelf);
+        for (let row = 0; row < 10; row++) {
+          const plank = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 14.2), MATS.wood);
+          plank.position.set(bx, 0.58 + row * 0.96, -20);
+          palaceGroup.add(plank);
+          for (let col = 0; col < 50 && bIdx < 1200; col++) {
+            bDummy.position.set(bx + (bx < -24 ? 0.68 : -0.68), 0.92 + row * 0.96, -26.5 + col * 0.26);
+            bDummy.rotation.set(0, 0, (rand() - 0.5) * 0.08);
+            bDummy.updateMatrix();
+            bookInst.setMatrixAt(bIdx, bDummy.matrix);
+            bookInst.setColorAt(bIdx, new THREE.Color(bookPalette[Math.floor(rand() * bookPalette.length)]));
+            bIdx++;
+          }
+        }
+      }
+      bookInst.instanceMatrix.needsUpdate = true;
+      if (bookInst.instanceColor) bookInst.instanceColor.needsUpdate = true;
+      palaceGroup.add(bookInst);
+
+      // Mezzanine Gallery & Golden Celestial Globe
+      const mezz = new THREE.Mesh(new THREE.BoxGeometry(17.2, 0.4, 3.0), MATS.wood);
+      mezz.position.set(-24, 5.5, -26.2);
+      const globe = new THREE.Mesh(new THREE.SphereGeometry(1.1, 18, 18), MATS.silkRoyal);
+      globe.position.set(-24, 2.2, -20);
+      const globeRing = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.08, 8, 28), MATS.gold);
+      globeRing.position.set(-24, 2.2, -20);
+      globeRing.rotation.x = 0.4;
+      palaceGroup.add(mezz, globe, globeRing);
+      addChandelier(-24, 10.5, -20, 1.15);
+    }
+
+    // CHAMBER 5: Reception Chamber & Grand Imperial Staircase (South Foyer: 0, 0, +16, 24 x 10 x 14)
+    {
+      buildChamberShell(0, 0, 16, 24, 10, 14, MATS.roofMint);
+      // Central crimson velvet foyer runner carpet
+      const foyerRug = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.08, 9.0), MATS.velvetCrimson);
+      foyerRug.position.set(0, 0.24, 17.5);
+      palaceGroup.add(foyerRug);
+
+      // Twin-flight Grand Staircase ascending symmetrically
+      for (let i = 0; i < 12; i++) {
+        const s = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.42, 0.7), MATS.ivoryMarble);
+        s.position.set(-5.2, 0.3 + i * 0.42, 18 - i * 0.55);
+        const s2 = s.clone();
+        s2.position.x = 5.2;
+        palaceGroup.add(s, s2);
+      }
+      // Golden staircase & upper landing balustrades
+      for (const sx of [-3.0, 3.0]) {
+        const sRail = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.9, 7.6), MATS.gold);
+        sRail.position.set(sx, 3.3, 15.0);
+        sRail.rotation.x = 0.65;
+        palaceGroup.add(sRail);
+      }
+      const landing = new THREE.Mesh(new THREE.BoxGeometry(15, 0.5, 3.4), MATS.ivoryMarble);
+      landing.position.set(0, 5.3, 11.2);
+      const landingRail = new THREE.Mesh(new THREE.BoxGeometry(6.2, 1.0, 0.24), MATS.gold);
+      landingRail.position.set(0, 6.0, 12.7);
+      palaceGroup.add(landing, landingRail);
+      addChandelier(0, 8.8, 16, 1.1);
+    }
+
+    // CHAMBER 6: Royal Sovereign Bedroom Suite (Upper East Suite: +24, 12.2, -18, 18 x 7.5 x 16)
+    {
+      buildChamberShell(24, 12.2, -18, 18, 7.5, 16, MATS.roofAzure);
+      // Four-Poster Royal Canopy Bed with Silk Curtains
+      const bedBase = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.1, 4.8), MATS.wood);
+      bedBase.position.set(24, 12.95, -21);
+      const mattress = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.5, 4.4), MATS.velvetCrimson);
+      mattress.position.set(24, 13.7, -21);
+      const bedCanopy = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.4, 5.0), MATS.gold);
+      bedCanopy.position.set(24, 17.2, -21);
+      palaceGroup.add(bedBase, mattress, bedCanopy);
+      for (const px of [22.2, 25.8]) {
+        for (const pz of [-23.2, -18.8]) {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 4.5, 10), MATS.wood);
+          post.position.set(px, 14.9, pz);
+          palaceGroup.add(post);
+        }
+      }
+      const suiteRug = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.08, 7.5), MATS.silkRoyal);
+      suiteRug.position.set(24, 12.44, -18);
+      palaceGroup.add(suiteRug);
+      addChandelier(24, 18.5, -18, 0.9);
+    }
+
+    // CHAMBER 7: Indoor Botanical Garden & Glass Conservatory (East Pavilion: +42, 0, -4, 16 x 11 x 18)
+    {
+      const cFloor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.4, 18), MATS.palaceFloor);
+      cFloor.position.set(42, 0, -4);
+      palaceGroup.add(cFloor);
+
+      // Glazed Conservatory Lower Walls & Barrel-Vault Glass Roof (stays translucent!)
+      for (const sx of [34, 50]) {
+        const gWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.5, 18), MATS.conservatoryGlass);
+        gWall.position.set(sx, 2.25, -4);
+        const ironPost = new THREE.Mesh(new THREE.BoxGeometry(0.32, 4.5, 0.32), MATS.wroughtIron);
+        for (let pz = -12; pz <= 4; pz += 4) {
+          const p = ironPost.clone();
+          p.position.set(sx, 2.25, pz);
+          palaceGroup.add(p);
+        }
+        palaceGroup.add(gWall);
+      }
+      const northGlass = new THREE.Mesh(new THREE.BoxGeometry(16, 4.5, 0.25), MATS.conservatoryGlass);
+      northGlass.position.set(42, 2.25, -13);
+      palaceGroup.add(northGlass);
+
+      const glassVault = new THREE.Mesh(
+        new THREE.CylinderGeometry(8.1, 8.1, 18, 16, 1, true, -Math.PI / 2, Math.PI),
+        MATS.conservatoryGlass
+      );
+      glassVault.rotation.x = -Math.PI / 2;
+      glassVault.position.set(42, 4.5, -4);
+      palaceGroup.add(glassVault);
+
+      for (let r = -12; r <= 4; r += 4) {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(8.15, 0.12, 8, 24, Math.PI), MATS.wroughtIron);
+        rib.position.set(42, 4.5, r);
+        palaceGroup.add(rib);
+      }
+      const ridgeBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 18), MATS.wroughtIron);
+      ridgeBar.position.set(42, 12.6, -4);
+      palaceGroup.add(ridgeBar);
+      for (const sx of [36.3, 47.7]) {
+        const purlin = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 18), MATS.wroughtIron);
+        purlin.position.set(sx, 10.2, -4);
+        palaceGroup.add(purlin);
+      }
+      // Indoor Fountain & Flowering Trees
+      const cFount = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.4, 1.1, 16), MATS.ivoryMarble);
+      cFount.position.set(42, 0.6, -4);
+      palaceGroup.add(cFount);
+      for (const [tx, tz] of [[37, -9], [47, -9], [37, 1], [47, 1]]) {
+        const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 3.2, 8), MATS.wood);
+        trk.position.set(tx, 1.8, tz);
+        const top = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8), new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.7 }));
+        top.position.set(tx, 4.0, tz);
+        palaceGroup.add(trk, top);
+      }
+    }
+
+    // =========================================================================
+    // 7. THE 5 CAPITAL CITY DISTRICTS (ROYAL, COMMERCIAL, RESIDENTIAL, CULTURAL, ENTERTAINMENT)
+    // =========================================================================
+    const cityGroup = new THREE.Group();
+    scene.add(cityGroup);
+
+    // Helper: Build Hero Landmark Buildings
+    function buildCeremonialFountain(x, z) {
+      const f = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 6.2, 0.9, 24), MATS.ivoryMarble);
+      base.position.y = 0.45;
+      const pool = new THREE.Mesh(new THREE.CylinderGeometry(4.8, 4.8, 0.2, 24), waterMat);
+      pool.position.y = 0.85;
+      const mid = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.3, 3.4, 14), MATS.ivoryMarble);
+      mid.position.y = 2.2;
+      const goldStatue = new THREE.Mesh(new THREE.OctahedronGeometry(1.1), MATS.gold);
+      goldStatue.position.y = 4.6;
+      f.add(base, pool, mid, goldStatue);
+      f.position.set(x, 0, z);
+      cityGroup.add(f);
+    }
+
+    // 1. ROYAL DISTRICT (Z=-35 to -10 around Ceremonial Avenue)
+    buildCeremonialFountain(0, -22);
+    // Aristocratic Mansions & Royal Ministry
+    for (const sx of [-18, 18]) {
+      for (const mz of [-30, -16]) {
+        const mGrp = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(11, 8.5, 10), MATS.ivoryMarble);
+        body.position.y = 4.25;
+        body.castShadow = true; body.receiveShadow = true;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(8.2, 4.6, 4), MATS.roofAzure);
+        roof.rotation.y = Math.PI / 4;
+        roof.position.y = 10.8;
+        const winBand = new THREE.Mesh(new THREE.BoxGeometry(11.2, 2.2, 10.2), MATS.windowGlow);
+        winBand.position.y = 5.4;
+        mGrp.add(body, roof, winBand);
+        mGrp.position.set(sx, 0, mz);
+        cityGroup.add(mGrp);
+        worldStats.buildings++;
+      }
+    }
+
+    // 2. CULTURAL DISTRICT (North-West: Opera House, Amphitheater, Museum, Monument, Public Library)
+    {
+      // Grand Opera House (-52, -26)
+      const op = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 18), MATS.ivoryMarble);
+      base.position.y = 5.5; base.castShadow = true; base.receiveShadow = true;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(7.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), MATS.gold);
+      dome.position.y = 11.0;
+      const portico = new THREE.Mesh(new THREE.BoxGeometry(14, 1.2, 4.5), MATS.ivoryMarble);
+      portico.position.set(0, 7.2, 10.5);
+      for (let cx = -5.5; cx <= 5.5; cx += 2.2) {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 7.2, 12), MATS.ivoryMarble);
+        col.position.set(cx, 3.6, 11.8);
+        op.add(col);
+      }
+      op.add(base, dome, portico);
+      op.position.set(-52, 0, -28);
+      cityGroup.add(op);
+      worldStats.buildings++;
+
+      // Royal Museum & Art Gallery (-78, -24)
+      const mus = new THREE.Group();
+      const mBody = new THREE.Mesh(new THREE.BoxGeometry(16, 8.5, 16), MATS.limestone);
+      mBody.position.y = 4.25; mBody.castShadow = true;
+      const mRoof = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 7.5, 3.8, 8), MATS.roofMint);
+      mRoof.position.y = 10.4;
+      mus.add(mBody, mRoof);
+      mus.position.set(-78, 0, -24);
+      cityGroup.add(mus);
+      worldStats.buildings++;
+
+      // Historic Obelisk Monument (-35, -18)
+      const ob = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 1.4, 12.5, 4), MATS.gold);
+      ob.position.set(-35, 6.25, -18);
+      ob.castShadow = true;
+      cityGroup.add(ob);
+      worldStats.buildings++;
+    }
+
+    // 3. ENTERTAINMENT DISTRICT (North-East: Festival Square, Music Stage, Pennant Garlands)
+    {
+      buildCeremonialFountain(52, -26);
+      // Open-Air Royal Concert Stage (68, -28)
+      const stage = new THREE.Group();
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(14, 1.4, 10), MATS.wood);
+      deck.position.y = 0.7;
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 10, 16, 1, true, 0, Math.PI), MATS.roofRose);
+      shell.rotation.y = Math.PI / 2;
+      shell.position.set(0, 5.2, -3.5);
+      stage.add(deck, shell);
+      stage.position.set(68, 0, -28);
+      cityGroup.add(stage);
+      worldStats.buildings++;
+
+      // Overhead Colorful Festival Pennant Garlands across Entertainment Square
+      const penColors = [0xf43f5e, 0xfbbf24, 0x38bdf8, 0x34d399, 0xa855f7];
+      for (let g = 0; g < 4; g++) {
+        for (let f = 0; f < 14; f++) {
+          const flag = new THREE.Mesh(
+            new THREE.ConeGeometry(0.45, 0.9, 3),
+            new THREE.MeshStandardMaterial({ color: penColors[(g + f) % penColors.length], roughness: 0.5 })
+          );
+          flag.rotation.x = Math.PI;
+          flag.position.set(38 + f * 2.2, 8.8 - Math.sin((f / 13) * Math.PI) * 1.4, -34 + g * 5.5);
+          cityGroup.add(flag);
+        }
+      }
+    }
+
+    // 4 & 5. INSTANCED CAPITAL DISTRICTS: COMMERCIAL MARKETPLACE + EUROPEAN TOWNHOUSES
+    // Batch repetitive buildings cleanly via InstancedMesh for 60 FPS performance!
+    {
+      // A. 136 European Townhouses & Commercial Shops across Commercial & Residential Districts
+      const houseSlots = [];
+      // Commercial Shops (South-West X: -92..-14, Z: 22..90)
+      for (let x = -90; x <= -15; x += 9.5) {
+        for (let z = 24; z <= 90; z += 10.5) {
+          if (Math.abs(x + 50) < 13 && Math.abs(z - 48) < 13) continue; // Leave Grand Marketplace Plaza clear!
+          houseSlots.push({ x: x + (rand() - 0.5) * 1.4, z: z + (rand() - 0.5) * 1.4, rot: (Math.floor(rand() * 4) * Math.PI) / 2, h: 6.2 + rand() * 4.8, w: 6.6 + rand() * 1.6 });
+        }
+      }
+      // Residential Townhouses (South-East X: +15..+92, Z: 24..90)
+      for (let x = 15; x <= 90; x += 9.5) {
+        for (let z = 24; z <= 90; z += 10.5) {
+          if (Math.abs(x - 50) < 11 && Math.abs(z - 52) < 11) continue; // Residential Fountain Square
+          houseSlots.push({ x: x + (rand() - 0.5) * 1.6, z: z + (rand() - 0.5) * 1.6, rot: (Math.floor(rand() * 4) * Math.PI) / 2, h: 6.0 + rand() * 5.4, w: 6.4 + rand() * 1.6 });
+        }
+      }
+      // Cultural & Entertainment District Outer Mansions & Riverside Guildhalls
+      for (let x = -90; x <= -20; x += 10.5) {
+        houseSlots.push({ x, z: -45, rot: 0, h: 7.8 + rand() * 3.5, w: 7.4 });
+        houseSlots.push({ x, z: -12, rot: Math.PI, h: 6.8 + rand() * 3.0, w: 7.0 });
+      }
+      for (let x = 20; x <= 90; x += 10.5) {
+        houseSlots.push({ x, z: -45, rot: 0, h: 7.8 + rand() * 3.5, w: 7.4 });
+        houseSlots.push({ x, z: -12, rot: Math.PI, h: 6.8 + rand() * 3.0, w: 7.0 });
+      }
+      // Royal Outer Estate Villas & District Landmarks (Bakery, Flower Boutique, Guild, Ministry, Theater, Athenaeum, 12 Townhouses)
+      for (let z = -85; z <= -58; z += 12) {
+        houseSlots.push({ x: -76, z, rot: Math.PI / 2, h: 8.2, w: 8.5 });
+        houseSlots.push({ x: 76, z, rot: -Math.PI / 2, h: 8.2, w: 8.5 });
+      }
+      const districtLandmarks = [
+        { x: -34, z: 38, rot: 0, h: 7.4, w: 7.6 },            // Royal Bakery
+        { x: -66, z: 38, rot: Math.PI / 2, h: 7.0, w: 7.2 },  // Flower Boutique
+        { x: -34, z: 58, rot: Math.PI, h: 8.4, w: 8.0 },      // Silk & Jewelry Guild
+        { x: -66, z: 58, rot: -Math.PI / 2, h: 7.2, w: 7.4 }, // Traditional Restaurant
+        { x: -48, z: 64, rot: 0, h: 6.8, w: 7.6 },            // Sidewalk Cafe Pavilion
+        { x: -12, z: -26, rot: Math.PI / 2, h: 9.8, w: 8.8 }, // Royal Administrative Ministry
+        { x: -66, z: -28, rot: 0, h: 9.2, w: 8.8 },           // Royal Theater
+        { x: -42, z: -36, rot: Math.PI, h: 8.8, w: 8.4 }      // Public Athenaeum Library
+      ];
+      districtLandmarks.forEach(lm => houseSlots.push(lm));
+      for (let i = 0; i < 12; i++) {
+        const side = i < 6 ? -1 : 1;
+        houseSlots.push({
+          x: side * (22 + (i % 6) * 11.5),
+          z: 96,
+          rot: Math.PI,
+          h: 6.5 + (i % 3) * 1.4,
+          w: 7.0
+        });
+      }
+
+      const nH = houseSlots.length;
+      const bodyGeo = new THREE.BoxGeometry(1, 1, 1);
+      const roofGeo = new THREE.ConeGeometry(0.84, 0.55, 4);
+      roofGeo.rotateY(Math.PI / 4);
+      const winGeo = new THREE.BoxGeometry(1.03, 0.22, 1.03);
+
+      const bodies = new THREE.InstancedMesh(bodyGeo, MATS.plaster, nH);
+      const roofs = new THREE.InstancedMesh(roofGeo, MATS.roofTerracotta, nH);
+      const wins = new THREE.InstancedMesh(winGeo, MATS.windowGlow, nH);
+      bodies.castShadow = true; bodies.receiveShadow = true;
+      roofs.castShadow = true;
+
+      const facadeTint = [0xfef3c7, 0xfde2e4, 0xe0f2fe, 0xe9d5ff, 0xd1fae5, 0xf5ebe0];
+      const roofTint = [0xc26845, 0xbe5c7e, 0x7c69b2, 0x4076b0, 0x3b8d7e];
+      const d = new THREE.Object3D();
+
+      houseSlots.forEach((hs, idx) => {
+        d.position.set(hs.x, hs.h / 2, hs.z);
+        d.rotation.set(0, hs.rot, 0);
+        d.scale.set(hs.w, hs.h, hs.w * 0.88);
+        d.updateMatrix();
+        bodies.setMatrixAt(idx, d.matrix);
+        bodies.setColorAt(idx, new THREE.Color(facadeTint[idx % facadeTint.length]));
+
+        d.position.set(hs.x, hs.h + hs.w * 0.24, hs.z);
+        d.scale.set(hs.w * 1.06, hs.w * 0.9, hs.w * 0.96);
+        d.updateMatrix();
+        roofs.setMatrixAt(idx, d.matrix);
+        roofs.setColorAt(idx, new THREE.Color(roofTint[idx % roofTint.length]));
+
+        d.position.set(hs.x, hs.h * 0.62, hs.z);
+        d.scale.set(hs.w, hs.h, hs.w * 0.88);
+        d.updateMatrix();
+        wins.setMatrixAt(idx, d.matrix);
+      });
+      bodies.instanceMatrix.needsUpdate = true; if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
+      roofs.instanceMatrix.needsUpdate = true; if (roofs.instanceColor) roofs.instanceColor.needsUpdate = true;
+      wins.instanceMatrix.needsUpdate = true;
+      scene.add(bodies, roofs, wins);
+      worldStats.buildings += nH;
+
+      // Residential Neighborhood Fountain Square
+      buildCeremonialFountain(50, 52);
+
+      // B. 36 Bustling Colorful Market Stalls in Commercial District (-50, 48)
+      const stallCount = 36;
+      const stBase = new THREE.InstancedMesh(new THREE.BoxGeometry(3.0, 1.2, 2.0), MATS.wood, stallCount);
+      const stAwning = new THREE.InstancedMesh(new THREE.BoxGeometry(3.4, 0.35, 2.6), new THREE.MeshStandardMaterial({ roughness: 0.65 }), stallCount);
+      const awningCols = [0xe11d48, 0xf59e0b, 0x0ea5e9, 0x10b981, 0x8b5cf6];
+      let sIdx = 0;
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 6; c++) {
+          const sx = -60 + c * 4.2;
+          const sz = 38 + r * 4.0;
+          d.position.set(sx, 0.6, sz);
+          d.rotation.set(0, (r % 2) * 0.08, 0);
+          d.scale.set(1, 1, 1);
+          d.updateMatrix();
+          stBase.setMatrixAt(sIdx, d.matrix);
+
+          d.position.set(sx, 2.35, sz);
+          d.rotation.set(0.18, 0, 0);
+          d.updateMatrix();
+          stAwning.setMatrixAt(sIdx, d.matrix);
+          stAwning.setColorAt(sIdx, new THREE.Color(awningCols[sIdx % awningCols.length]));
+          sIdx++;
+        }
+      }
+      stBase.instanceMatrix.needsUpdate = true;
+      stAwning.instanceMatrix.needsUpdate = true; if (stAwning.instanceColor) stAwning.instanceColor.needsUpdate = true;
+      scene.add(stBase, stAwning);
+      worldStats.buildings += stallCount;
+
+      // C. 64 Illuminated Wrought-Iron & Gold Streetlamps across avenues & plazas
+      const lampSpots = [];
+      for (let z = -34; z <= 84; z += 14) {
+        lampSpots.push([-7.5, z], [7.5, z]);
+      }
+      for (let x = -72; x <= 72; x += 18) {
+        lampSpots.push([x, -12], [x, 26]);
+      }
+      const lpPost = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 4.2, 8), MATS.wroughtIron, lampSpots.length);
+      const lpBulb = new THREE.InstancedMesh(new THREE.SphereGeometry(0.32, 10, 10), MATS.lanternGlow, lampSpots.length);
+      lampSpots.forEach(([lx, lz], i) => {
+        d.position.set(lx, 2.1, lz); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1); d.updateMatrix();
+        lpPost.setMatrixAt(i, d.matrix);
+        d.position.set(lx, 4.35, lz); d.updateMatrix();
+        lpBulb.setMatrixAt(i, d.matrix);
+      });
+      lpPost.instanceMatrix.needsUpdate = true;
+      lpBulb.instanceMatrix.needsUpdate = true;
+      scene.add(lpPost, lpBulb);
+    }
+
+    // =========================================================================
+    // 8. NATURAL SCENERY: 480 TREES & 2,600 COLORFUL WILDFLOWERS
+    // =========================================================================
+    {
+      const treePositions = [];
+      for (let i = 0; i < 1200 && treePositions.length < 475; i++) {
+        const ang = rand() * Math.PI * 2;
+        const dist = 104 + rand() * 135;
+        const tx = Math.cos(ang) * dist;
+        const tz = Math.sin(ang) * dist;
+        const rz = getRiverCenterZ(tx);
+        if (Math.abs(tz - rz) < 13) continue;
+        if (Math.abs(tx) < 64 && tz < -56 && tz > -142) continue; // Keep Royal Palace & interiors clear!
+        const ty = getTerrainHeight(tx, tz);
+        if (ty > 32) continue;
+        treePositions.push({ x: tx, y: ty, z: tz, s: 0.75 + rand() * 0.9, isBlossom: rand() < 0.25 });
+      }
+      // Add royal garden cypress & cherry trees inside the city parks!
+      for (const [tx, tz] of [[-13, -38], [13, -38], [-13, -24], [13, -24], [34, -18], [34, -34], [-34, -36], [66, 46], [-66, 56]]) {
+        treePositions.push({ x: tx, y: 0, z: tz, s: 0.85, isBlossom: true });
+      }
+
+      const nT = treePositions.length;
+      const tTrunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.32, 0.48, 4.0, 8), MATS.wood, nT);
+      const tCrowns = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(2.4, 1), new THREE.MeshStandardMaterial({ roughness: 0.82 }), nT);
+      tTrunks.castShadow = true; tCrowns.castShadow = true;
+
+      const dummy = new THREE.Object3D();
+      treePositions.forEach((tp, i) => {
+        dummy.position.set(tp.x, tp.y + 2.0 * tp.s, tp.z);
+        dummy.scale.set(tp.s, tp.s, tp.s);
+        dummy.updateMatrix();
+        tTrunks.setMatrixAt(i, dummy.matrix);
+
+        dummy.position.set(tp.x, tp.y + 4.8 * tp.s, tp.z);
+        dummy.scale.set(tp.s * 1.05, tp.s * 1.2, tp.s * 1.05);
+        dummy.updateMatrix();
+        tCrowns.setMatrixAt(i, dummy.matrix);
+        tCrowns.setColorAt(i, new THREE.Color(tp.isBlossom ? 0xf9a8d4 : (i % 2 === 0 ? 0x2d7a47 : 0x3b8c4e)));
+      });
+      tTrunks.instanceMatrix.needsUpdate = true;
+      tCrowns.instanceMatrix.needsUpdate = true; if (tCrowns.instanceColor) tCrowns.instanceColor.needsUpdate = true;
+      scene.add(tTrunks, tCrowns);
+      worldStats.trees = nT;
+
+      // 2,600 Colorful Wildflowers across meadows & city planters
+      const nF = 2600;
+      const fMesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.34, 0), new THREE.MeshStandardMaterial({ roughness: 0.65 }), nF);
+      const flowerCols = [0xf472b6, 0xfbbf24, 0xc084fc, 0xfef08a, 0xfb7185, 0xffffff];
+      let fPlaced = 0;
+      for (let i = 0; i < 4200 && fPlaced < nF; i++) {
+        const ang = rand() * Math.PI * 2;
+        const dist = 36 + rand() * 145;
+        const fx = Math.cos(ang) * dist;
+        const fz = Math.sin(ang) * dist;
+        if (Math.abs(fz - getRiverCenterZ(fx)) < 12) continue;
+        if (fx > -58 && fx < 58 && fz < -58 && fz > -136) continue;
+        const fy = Math.hypot(fx, fz) < 115 ? 0 : getTerrainHeight(fx, fz);
+        dummy.position.set(fx, fy + 0.22, fz);
+        const sc = 0.7 + rand() * 0.8;
+        dummy.scale.set(sc, sc, sc);
+        dummy.updateMatrix();
+        fMesh.setMatrixAt(fPlaced, dummy.matrix);
+        fMesh.setColorAt(fPlaced, new THREE.Color(flowerCols[fPlaced % flowerCols.length]));
+        fPlaced++;
+      }
+      fMesh.count = fPlaced;
+      fMesh.instanceMatrix.needsUpdate = true; if (fMesh.instanceColor) fMesh.instanceColor.needsUpdate = true;
+      scene.add(fMesh);
+      worldStats.flowers = fPlaced;
+    }
+
+    // =========================================================================
+    // 9. LIVING CITY: 220+ CITIZENS, GUARDS, PERFORMERS, CARRIAGES & BOATS
+    // =========================================================================
+    {
+      const personBodyGeo = new THREE.CylinderGeometry(0.26, 0.34, 1.15, 8);
+      const personHeadGeo = new THREE.SphereGeometry(0.22, 10, 10);
+      const cloakColors = [0x2563eb, 0xd97706, 0xdb2777, 0x059669, 0x7c3aed, 0x0f766e, 0xdc2626];
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xf4c7a8, roughness: 0.6 });
+
+      function spawnWalker(x, y, z, colorHex, pathFn, isGuard = false) {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(personBodyGeo, new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.65, metalness: isGuard ? 0.55 : 0.05 }));
+        body.position.y = 0.6;
+        const head = new THREE.Mesh(personHeadGeo, skinMat);
+        head.position.y = 1.38;
+        g.add(body, head);
+        if (isGuard) {
+          const helm = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.35, 8), MATS.gold);
+          helm.position.y = 1.62;
+          const lance = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.2, 6), MATS.gold);
+          lance.position.set(0.32, 1.1, 0);
+          g.add(helm, lance);
+        }
+        g.position.set(x, y, z);
+        scene.add(g);
+        animatedWalkers.push({ mesh: g, baseX: x, baseY: y, baseZ: z, pathFn, phase: rand() * Math.PI * 2 });
+        worldStats.citizens++;
+      }
+
+      // 85 Dynamic Patrolling Royal Guards, Marketplace Shoppers & Promenade Citizens
+      for (let i = 0; i < 65; i++) {
+        const zone = i % 4;
+        let x, z;
+        if (zone === 0) { x = (rand() - 0.5) * 14; z = -30 + rand() * 90; }          // Grand Royal Avenue
+        else if (zone === 1) { x = -64 + rand() * 28; z = 34 + rand() * 28; }       // Commercial Marketplace
+        else if (zone === 2) { x = 36 + rand() * 32; z = -34 + rand() * 20; }       // Entertainment Festival Square
+        else { x = 34 + rand() * 32; z = 36 + rand() * 32; }                        // Residential Squares
+        const isGuard = (i % 5 === 0);
+        const col = isGuard ? 0x1d4ed8 : cloakColors[i % cloakColors.length];
+        spawnWalker(x, 0, z, col, (t, w) => {
+          w.mesh.position.x = w.baseX + Math.sin(t * 0.45 + w.phase) * 4.5;
+          w.mesh.position.z = w.baseZ + Math.cos(t * 0.38 + w.phase) * 4.5;
+          w.mesh.position.y = w.baseY + Math.abs(Math.sin(t * 6.0 + w.phase)) * 0.09;
+        }, isGuard);
+      }
+
+      // 20 Royal Guards & Courtiers flanking the Throne Room aisles (clear of Staircase Foyer & walls)
+      for (let i = 0; i < 20; i++) {
+        const px = (i % 2 === 0 ? -5.2 : 5.2);
+        const pz = -112 + Math.floor(i / 2) * 2.2;
+        spawnWalker(px, 18.2, pz, i % 2 === 0 ? 0xf5c851 : 0x7c3aed, (t, w) => {
+          w.mesh.position.x = w.baseX + Math.sin(t * 0.3 + w.phase) * 0.45;
+          w.mesh.position.y = w.baseY + Math.abs(Math.sin(t * 3.5 + w.phase)) * 0.04;
+        }, i % 3 === 0);
+      }
+
+      // 135 Instanced Stationary / Gathering Citizens around Fountains, Cafes & Stage Audience
+      const crowdCount = 135;
+      const crowdMesh = new THREE.InstancedMesh(personBodyGeo, new THREE.MeshStandardMaterial({ roughness: 0.7 }), crowdCount);
+      const crowdHeads = new THREE.InstancedMesh(personHeadGeo, skinMat, crowdCount);
+      const d = new THREE.Object3D();
+      for (let i = 0; i < crowdCount; i++) {
+        let cx, cz;
+        if (i < 45) { const a = rand() * Math.PI * 2; cx = Math.cos(a) * (7 + rand() * 5); cz = -22 + Math.sin(a) * (7 + rand() * 5); }
+        else if (i < 90) { cx = -62 + rand() * 24; cz = 35 + rand() * 24; }
+        else { cx = 46 + rand() * 24; cz = -34 + rand() * 18; }
+        d.position.set(cx, 0.6, cz); d.rotation.set(0, rand() * Math.PI * 2, 0); d.updateMatrix();
+        crowdMesh.setMatrixAt(i, d.matrix);
+        crowdMesh.setColorAt(i, new THREE.Color(cloakColors[i % cloakColors.length]));
+        d.position.set(cx, 1.38, cz); d.updateMatrix();
+        crowdHeads.setMatrixAt(i, d.matrix);
+      }
+      crowdMesh.instanceMatrix.needsUpdate = true; if (crowdMesh.instanceColor) crowdMesh.instanceColor.needsUpdate = true;
+      crowdHeads.instanceMatrix.needsUpdate = true;
+      scene.add(crowdMesh, crowdHeads);
+      worldStats.citizens += crowdCount;
+
+      // 6 Animated Horse-Drawn Carriages on Royal Avenue & Bridges
+      for (let i = 0; i < 6; i++) {
+        const cGrp = new THREE.Group();
+        const coach = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.6, 3.0), i % 2 === 0 ? MATS.gold : MATS.velvetCrimson);
+        coach.position.set(0, 1.35, -0.8);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.25, 3.1), MATS.ivoryMarble);
+        roof.position.set(0, 2.25, -0.8);
+        // Two horses in front
+        for (const hx of [-0.55, 0.55]) {
+          const horse = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.9, 1.8), MATS.wood);
+          horse.position.set(hx, 1.0, 2.0);
+          const hHead = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.65, 0.5), MATS.wood);
+          hHead.position.set(hx, 1.55, 2.8);
+          cGrp.add(horse, hHead);
+        }
+        const wheels = [];
+        for (const wx of [-1.1, 1.1]) {
+          for (const wz of [-1.8, 0.2]) {
+            const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.16, 12), MATS.gold);
+            wh.rotation.z = Math.PI / 2;
+            wh.position.set(wx, 0.55, wz);
+            cGrp.add(wh);
+            wheels.push(wh);
+          }
+        }
+        cGrp.add(coach, roof);
+        scene.add(cGrp);
+        animatedCarriages.push({ mesh: cGrp, wheels, laneX: i < 3 ? -3.2 : 3.2, zOffset: -20 + (i % 3) * 35, dir: i < 3 ? 1 : -1 });
+        worldStats.vehicles++;
+      }
+
+      // 4 Royal Sailboats gliding along the Crystal River
+      for (let i = 0; i < 4; i++) {
+        const boat = new THREE.Group();
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 1.8), MATS.wood);
+        const sail = new THREE.Mesh(new THREE.ConeGeometry(1.5, 4.2, 3), MATS.ivoryMarble);
+        sail.position.y = 2.8;
+        boat.add(hull, sail);
+        scene.add(boat);
+        animatedBoats.push({ mesh: boat, baseX: -120 + i * 75, dir: i % 2 === 0 ? 1 : -1 });
+        worldStats.vehicles++;
+      }
+
+      // 300 Floating Golden Sky Lanterns (visible at Evening & rising at Night!)
+      const lanternGeo = new THREE.CylinderGeometry(0.32, 0.24, 0.55, 8);
+      const lanternMat = new THREE.MeshBasicMaterial({ color: 0xffd269, transparent: true, opacity: 0.0 });
+      skyLanternMesh = new THREE.InstancedMesh(lanternGeo, lanternMat, 300);
+      for (let i = 0; i < 300; i++) {
+        skyLanternData.push({
+          x: (rand() - 0.5) * 220,
+          y: 6 + rand() * 75,
+          z: (rand() - 0.5) * 220,
+          speed: 1.2 + rand() * 1.8,
+          sway: rand() * Math.PI * 2
+        });
+      }
+      scene.add(skyLanternMesh);
+    }
+
+    // Update live HUD stats
+    document.getElementById('st-buildings').textContent = worldStats.buildings;
+    document.getElementById('st-towers').textContent = worldStats.palaceTowers;
+    document.getElementById('st-rooms').textContent = worldStats.interiorRooms;
+    document.getElementById('st-citizens').textContent = worldStats.citizens;
+    document.getElementById('st-vehicles').textContent = worldStats.vehicles;
+    document.getElementById('st-nature').textContent = (worldStats.trees + worldStats.flowers).toLocaleString();
+
+    // =========================================================================
+    // 10. 5 ATMOSPHERIC MOODS & PALACE CUTAWAY ENGINE
+    // =========================================================================
+    const MOODS = {
+      morning: {
+        top: 0x5c94d4, horiz: 0xfad6b8, fog: 0xf5d6bc, fogDens: 0.0020,
+        sunPos: [85, 36, -95], sunCol: 0xffe4bd, sunInt: 2.2,
+        hemiSky: 0xffe8d6, hemiGnd: 0x455c4f, hemiInt: 0.95,
+        rayOp: 0.032, winEmissive: 0.25, streetInt: 0, lanternOp: 0.0, stars: 0.0
+      },
+      afternoon: {
+        top: 0x2563eb, horiz: 0xbae6fd, fog: 0xcbe8f8, fogDens: 0.0014,
+        sunPos: [55, 115, -50], sunCol: 0xfff8e7, sunInt: 2.65,
+        hemiSky: 0xe0f2fe, hemiGnd: 0x3b6641, hemiInt: 1.05,
+        rayOp: 0.018, winEmissive: 0.08, streetInt: 0, lanternOp: 0.0, stars: 0.0
+      },
+      golden: {
+        top: 0x2e5894, horiz: 0xf6bd78, fog: 0xe9c496, fogDens: 0.0020,
+        sunPos: [70, 44, -110], sunCol: 0xffd28a, sunInt: 2.55,
+        hemiSky: 0xffdeb0, hemiGnd: 0x3b4a5e, hemiInt: 0.88,
+        rayOp: 0.052, winEmissive: 0.65, streetInt: 3, lanternOp: 0.08, stars: 0.05
+      },
+      evening: {
+        top: 0x161942, horiz: 0x8b4875, fog: 0x3b2a54, fogDens: 0.0024,
+        sunPos: [-80, 22, -120], sunCol: 0xf472b6, sunInt: 0.95,
+        hemiSky: 0x6d5ba8, hemiGnd: 0x1f2937, hemiInt: 0.65,
+        rayOp: 0.015, winEmissive: 1.45, streetInt: 28, lanternOp: 0.72, stars: 0.45
+      },
+      night: {
+        top: 0x050918, horiz: 0x132044, fog: 0x0c152e, fogDens: 0.0025,
+        sunPos: [-65, 95, -90], sunCol: 0x93c5fd, sunInt: 0.85,
+        hemiSky: 0x33417a, hemiGnd: 0x0f172a, hemiInt: 0.48,
+        rayOp: 0.0, winEmissive: 2.1, streetInt: 45, lanternOp: 0.96, stars: 1.0
+      }
+    };
+
+    let currentMood = 'golden';
+    function setMood(moodName) {
+      const m = MOODS[moodName];
+      if (!m) return;
+      currentMood = moodName;
+      document.querySelectorAll('#mood-bar .royal-btn').forEach(b => b.classList.toggle('active', b.dataset.mood === moodName));
+
+      skyUniforms.uTopColor.value.setHex(m.top);
+      skyUniforms.uHorizColor.value.setHex(m.horiz);
+      skyUniforms.uSunColor.value.setHex(m.sunCol);
+      skyUniforms.uStarAlpha.value = m.stars;
+      scene.fog.color.setHex(m.fog);
+      scene.fog.density = m.fogDens;
+
+      sunLight.position.set(...m.sunPos);
+      skyUniforms.uSunDir.value.set(...m.sunPos).normalize();
+      sunLight.color.setHex(m.sunCol);
+      sunLight.intensity = m.sunInt;
+
+      hemiLight.color.setHex(m.hemiSky);
+      hemiLight.groundColor.setHex(m.hemiGnd);
+      hemiLight.intensity = m.hemiInt;
+
+      rayMat.opacity = m.rayOp;
+      godRaysGroup.visible = m.rayOp > 0.005;
+      MATS.windowGlow.emissiveIntensity = m.winEmissive;
+      MATS.stainedGlass.emissiveIntensity = 0.4 + m.winEmissive * 0.45;
+      cityStreetLights.forEach(l => { l.intensity = m.streetInt; });
+      if (skyLanternMesh) {
+        skyLanternMesh.material.opacity = m.lanternOp;
+        skyLanternMesh.visible = m.lanternOp > 0.02;
+      }
+      renderer.shadowMap.needsUpdate = true;
+    }
+
+    let palaceCutaway = false;
+    function setCutaway(enabled) {
+      palaceCutaway = enabled;
+      document.getElementById('btn-palace-cutaway').classList.toggle('cutaway-on', enabled);
+      palaceCutawayTargets.forEach(mesh => { mesh.visible = !enabled; });
+      renderer.shadowMap.needsUpdate = true;
+    }
+
+    // =========================================================================
+    // 11. LOCATION TELEPORTS & NAVIGATION MODES (ORBIT, WASD WALK, CARRIAGE)
+    // =========================================================================
+    const LOCATIONS = {
+      overview: {
+        group: 'district', label: 'Kingdom Overview', tag: 'REALM',
+        pos: [52, 54, 96], look: [0, 14, -52],
+        desc: 'Panoramic view across the Valley of Eternal Elegance: Royal Palace acropolis, 5 bustling capital districts, crystal river bridges, and alpine peaks.'
+      },
+      palace: {
+        group: 'district', label: 'Royal Palace Exterior', tag: 'PALACE',
+        pos: [0, 38, -28], look: [0, 26, -100],
+        desc: 'Enormous fairytale royal palace featuring 14 pointed pastel-and-gold spires, stained-glass arches, ornamental balconies, viaduct bridges, and royal fountain courtyards.'
+      },
+      royal: {
+        group: 'district', label: 'Royal District', tag: 'NOBLE',
+        pos: [-16, 12, -4], look: [0, 6, -26],
+        desc: 'Aristocratic limestone mansions, Ceremonial Fountain Square, Royal Administrative buildings, and the monumental grand staircase leading up to the palace.'
+      },
+      commercial: {
+        group: 'district', label: 'Commercial Marketplace', tag: 'MARKET',
+        pos: [-36, 12, 68], look: [-52, 2, 46],
+        desc: 'Bustling medieval marketplace packed with 36 colorful awning stalls, flower vendors, bakeries, boutiques, cafes, and citizens browsing goods.'
+      },
+      residential: {
+        group: 'district', label: 'Residential Quarter', tag: 'TOWN',
+        pos: [66, 14, 72], look: [48, 3, 48],
+        desc: 'Romantic European-inspired townhouses with pastel plaster facades, pitched ceramic roofs, cobblestone alleys, and lively neighborhood fountain plazas.'
+      },
+      cultural: {
+        group: 'district', label: 'Cultural Opera & Museum', tag: 'ARTS',
+        pos: [-38, 16, -4], look: [-58, 7, -26],
+        desc: 'Home to the gilded-dome Grand Opera House, Royal Museum & Art Gallery, and Historic Obelisk Monument.'
+      },
+      entertainment: {
+        group: 'district', label: 'Entertainment Festival', tag: 'FEST',
+        pos: [34, 12, -8], look: [56, 4, -26],
+        desc: 'Festive public square adorned with overhead pennant garlands, open-air royal concert shell, outdoor dining terraces, and joyous crowds.'
+      },
+      waterfalls: {
+        group: 'district', label: 'Waterfalls & Bridges', tag: 'NATURE',
+        pos: [74, 18, -28], look: [24, 6, -56],
+        desc: 'Twin cascading waterfalls plunging down the palace cliffs into shimmering emerald lakes and 5 multi-arch stone bridges spanning the crystal river.'
+      },
+      // 7 PALACE INTERIOR CHAMBERS (Palace group origin = (0, 18.1, -100))
+      throne: {
+        group: 'interior', label: 'Grand Throne Room', tag: 'CHAMBER',
+        pos: [0, 22.8, -94], look: [0, 21.8, -114],
+        desc: 'Sovereign heart of Astrema: fluted ivory marble columns, crimson velvet runner carpet, glowing stained-glass apse, frescoed ceiling, and Golden Throne Dais.'
+      },
+      ballroom: {
+        group: 'interior', label: 'Crystal Ballroom', tag: 'CHAMBER',
+        pos: [24, 22.5, -91], look: [24, 22.8, -105],
+        desc: 'Magnificent inlaid marble dance floor illuminated by 3 multi-tiered crystal chandeliers, arched gilt mirrors, velvet drapes, and orchestra balcony.'
+      },
+      dining: {
+        group: 'interior', label: 'Royal Dining Hall', tag: 'CHAMBER',
+        pos: [-18, 22.4, -92], look: [-25, 20.4, -103],
+        desc: 'Grand state banquet hall boasting a 16-unit carved walnut table, 20 silk-upholstered royal chairs, golden candelabra, and blazing marble hearth.'
+      },
+      library: {
+        group: 'interior', label: 'Royal Library', tag: 'CHAMBER',
+        pos: [-19.5, 23.2, -113.5], look: [-28.5, 22.4, -122],
+        desc: 'Two-story archive housing towering carved oak bookshelves packed with 1,200 colorful volumes, mezzanine gallery, and spinning celestial globe.'
+      },
+      staircase: {
+        group: 'interior', label: 'Reception & Staircase', tag: 'CHAMBER',
+        pos: [0, 22.0, -78], look: [0, 21.5, -88],
+        desc: 'Grand imperial foyer with twin ornamental marble staircases, gilded balustrades, and glowing crystal chandelier.'
+      },
+      bedroom: {
+        group: 'interior', label: 'Royal Bedroom Suite', tag: 'CHAMBER',
+        pos: [24, 33.4, -112], look: [24, 32.5, -121],
+        desc: 'Lavish upper-east sovereign suite featuring a carved walnut four-poster canopy bed with crimson silk drapes and woven royal rug.'
+      },
+      conservatory: {
+        group: 'interior', label: 'Glass Conservatory', tag: 'CHAMBER',
+        pos: [42, 22.0, -96], look: [42, 21.8, -106],
+        desc: 'Wrought-iron and glass domed indoor botanical garden filled with flowering trees and a tranquil marble fountain.'
+      }
+    };
+
+    let navMode = 'orbit';
+    let camAnim = false;
+    const targetCamPos = new THREE.Vector3(52, 54, 96);
+    const targetLookPos = new THREE.Vector3(0, 14, -52);
+    const keysPressed = {};
+
+    controls.addEventListener('start', () => { camAnim = false; });
+
+    function teleportTo(locId) {
+      const loc = LOCATIONS[locId];
+      if (!loc) return;
+      if (navMode === 'carriage') setNavMode('orbit');
+
+      document.querySelectorAll('.loc-btn').forEach(b => b.classList.toggle('active', b.dataset.loc === locId));
+      document.getElementById('lore-title').textContent = loc.label;
+      document.getElementById('lore-text').textContent = loc.desc;
+
+      targetCamPos.set(...loc.pos);
+      targetLookPos.set(...loc.look);
+      camAnim = true;
+
+      if (loc.group === 'interior') {
+        interiorPointLight.position.set(loc.look[0], loc.look[1] + 5.5, loc.look[2]);
+        interiorPointLight.intensity = 24;
+      } else {
+        interiorPointLight.position.set(0, 26, -100);
+        interiorPointLight.intensity = 14;
+      }
+
+      // Allow closer interior camera zoom when inside Palace rooms
+      controls.maxPolarAngle = loc.group === 'interior' ? Math.PI * 0.85 : Math.PI * 0.492;
+    }
+
+    function setNavMode(mode) {
+      navMode = mode;
+      document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === mode));
+      controls.enabled = (mode === 'orbit');
+      document.getElementById('bottom-hint').textContent = mode === 'walk'
+        ? 'First-Person Walk: W/A/S/D or Arrows to Move · Drag Mouse to Look · Press Orbit to Return'
+        : mode === 'carriage'
+        ? 'Riding Royal Carriage along Grand Avenue & Stone Bridge...'
+        : 'Drag to Orbit · Scroll to Zoom · Right-Drag to Pan · Click Locations or Switch Moods';
+    }
+
+    function buildLocationUI() {
+      const dList = document.getElementById('district-list');
+      const iList = document.getElementById('interior-list');
+      Object.entries(LOCATIONS).forEach(([id, loc]) => {
+        const btn = document.createElement('button');
+        btn.className = 'loc-btn' + (id === 'overview' ? ' active' : '');
+        btn.dataset.loc = id;
+        btn.innerHTML = `<span>${loc.label}</span><span class="loc-tag">${loc.tag}</span>`;
+        btn.addEventListener('click', () => teleportTo(id));
+        (loc.group === 'district' ? dList : iList).appendChild(btn);
+      });
+    }
+
+    buildLocationUI();
+    setMood('golden');
+
+    // UI Event Listeners
+    document.querySelectorAll('[data-mood]').forEach(b => b.addEventListener('click', () => setMood(b.dataset.mood)));
+    document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => setNavMode(b.dataset.nav)));
+    document.getElementById('btn-palace-cutaway').addEventListener('click', () => setCutaway(!palaceCutaway));
+    document.getElementById('btn-hide-nav').addEventListener('click', () => document.getElementById('left-nav').classList.add('collapsed'));
+    document.getElementById('btn-show-nav').addEventListener('click', () => document.getElementById('left-nav').classList.remove('collapsed'));
+
+    window.addEventListener('keydown', e => { keysPressed[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', e => { keysPressed[e.key.toLowerCase()] = false; });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    let pausedLoop = false;
+    window.astremaApp = {
+      scene, camera, renderer,
+      setMood,
+      getMood: () => currentMood,
+      teleportTo,
+      snapCamera: () => {
+        camera.position.copy(targetCamPos);
+        controls.target.copy(targetLookPos);
+        camAnim = false;
+        controls.update();
+        renderer.render(scene, camera);
+      },
+      setPaused: (v) => { pausedLoop = v; },
+      setCutaway,
+      getStats: () => ({ ...worldStats, mood: currentMood, cutaway: palaceCutaway })
+    };
+
+    // =========================================================================
+    // 12. REAL-TIME ANIMATION LOOP (WALKERS, CARRIAGES, BOATS, WATERFALLS, LANTERNS)
+    // =========================================================================
+    const clock = new THREE.Clock();
+    const lDummy = new THREE.Object3D();
+    const walkFwd = new THREE.Vector3();
+    const walkRight = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (pausedLoop) return;
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.elapsedTime;
+      skyUniforms.uTime.value = elapsed;
+
+      // 1. Animated Citizens & Guards
+      for (let i = 0; i < animatedWalkers.length; i++) {
+        const w = animatedWalkers[i];
+        w.pathFn(elapsed, w);
+      }
+
+      // 2. Animated Horse-Drawn Carriages on Grand Royal Avenue & Bridge
+      for (let i = 0; i < animatedCarriages.length; i++) {
+        const c = animatedCarriages[i];
+        const zSpan = 105;
+        const rawZ = ((elapsed * 6.5 * c.dir + c.zOffset + 25) % zSpan + zSpan) % zSpan - 25;
+        c.mesh.position.set(c.laneX, 0, rawZ);
+        c.mesh.rotation.y = c.dir > 0 ? 0 : Math.PI;
+        for (const wh of c.wheels) wh.rotation.x += dt * 4.5;
+      }
+
+      // 3. Animated River Boats along S-curve Crystal River
+      for (let i = 0; i < animatedBoats.length; i++) {
+        const b = animatedBoats[i];
+        const xSpan = 260;
+        const bx = ((elapsed * 4.2 * b.dir + b.baseX + 130) % xSpan + xSpan) % xSpan - 130;
+        const bz = getRiverCenterZ(bx);
+        b.mesh.position.set(bx, -1.25 + Math.sin(elapsed * 2.0 + i) * 0.08, bz);
+        b.mesh.rotation.y = b.dir > 0 ? 0 : Math.PI;
+      }
+
+      // 4. Waterfall Mist Plumes
+      for (let i = 0; i < waterfallParticles.length; i++) {
+        const p = waterfallParticles[i];
+        const cycle = (elapsed * 0.9 + p.phase) % 1.0;
+        p.mesh.position.y = -1.2 + cycle * 3.5;
+        p.mesh.scale.setScalar(0.8 + cycle * 0.9);
+      }
+
+      // 5. Floating Golden Sky Lanterns at Evening & Night
+      if (skyLanternMesh && skyLanternMesh.visible) {
+        for (let i = 0; i < skyLanternData.length; i++) {
+          const ld = skyLanternData[i];
+          const ly = ((ld.y + elapsed * ld.speed) % 85) + 4;
+          const lx = ld.x + Math.sin(elapsed * 0.6 + ld.sway) * 2.4;
+          lDummy.position.set(lx, ly, ld.z);
+          lDummy.rotation.set(0, elapsed * 0.5 + ld.sway, 0);
+          lDummy.updateMatrix();
+          skyLanternMesh.setMatrixAt(i, lDummy.matrix);
+        }
+        skyLanternMesh.instanceMatrix.needsUpdate = true;
+      }
+
+      // 6. Camera Navigation Modes
+      if (navMode === 'carriage' && animatedCarriages[0]) {
+        const lead = animatedCarriages[0].mesh.position;
+        camera.position.lerp(new THREE.Vector3(lead.x + 2.5, 4.2, lead.z - 6.5), 0.08);
+        controls.target.lerp(new THREE.Vector3(0, 6.0, lead.z - 35), 0.08);
+      } else if (navMode === 'walk') {
+        camera.getWorldDirection(walkFwd);
+        walkFwd.y = 0; walkFwd.normalize();
+        walkRight.crossVectors(walkFwd, camera.up).normalize();
+        const spd = 18.0 * dt;
+        if (keysPressed['w'] || keysPressed['arrowup']) camera.position.addScaledVector(walkFwd, spd);
+        if (keysPressed['s'] || keysPressed['arrowdown']) camera.position.addScaledVector(walkFwd, -spd);
+        if (keysPressed['a'] || keysPressed['arrowleft']) camera.position.addScaledVector(walkRight, -spd);
+        if (keysPressed['d'] || keysPressed['arrowright']) camera.position.addScaledVector(walkRight, spd);
+        const groundY = getTerrainHeight(camera.position.x, camera.position.z);
+        camera.position.y += ((groundY + 2.2) - camera.position.y) * 0.15;
+        controls.target.copy(camera.position).add(walkFwd);
+      } else if (camAnim) {
+        const lerpF = 1 - Math.exp(-6.5 * dt);
+        camera.position.lerp(targetCamPos, lerpF);
+        controls.target.lerp(targetLookPos, lerpF);
+        if (camera.position.distanceTo(targetCamPos) < 0.2 && controls.target.distanceTo(targetLookPos) < 0.2) {
+          camAnim = false;
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

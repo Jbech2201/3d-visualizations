@@ -1,0 +1,3759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AERO-350X Widebody Passenger Airliner — Interactive 3D CAD & Multi-Mode Inspector</title>
+  <style>
+    :root {
+      --bg-deep: #060b14;
+      --bg-panel: rgba(10, 18, 32, 0.82);
+      --bg-panel-hover: rgba(20, 34, 58, 0.92);
+      --border: rgba(56, 189, 248, 0.22);
+      --border-strong: rgba(56, 189, 248, 0.55);
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 35%, #0f1c32 0%, #060b14 75%);
+      color: var(--text);
+      font-family: var(--sans);
+      user-select: none;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Glassmorphism HUD */
+    .hud-panel {
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 38px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Top Header & Mode Switcher */
+    .top-bar {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      pointer-events: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(99, 102, 241, 0.25));
+      border: 1px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    .brand-title h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .brand-title p {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .mode-switcher {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 13px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.18s ease;
+    }
+
+    .mode-btn:hover {
+      background: rgba(30, 41, 59, 0.9);
+      color: #fff;
+      border-color: rgba(56, 189, 248, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.36), rgba(59, 130, 246, 0.32));
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), inset 0 0 8px rgba(56, 189, 248, 0.2);
+    }
+
+    .mode-key {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--accent);
+    }
+
+    /* Live Part Count Hero Badge in Top Bar */
+    .live-counter-pill {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      background: rgba(8, 15, 29, 0.85);
+      border: 1px solid var(--border-strong);
+    }
+
+    .counter-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .counter-label {
+      font-size: 9px;
+      font-family: var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .counter-value {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--emerald);
+      line-height: 1.15;
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+
+    .counter-value.pulse {
+      transform: scale(1.1);
+      color: var(--accent);
+    }
+
+    .counter-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(148, 163, 184, 0.22);
+    }
+
+    .counter-sub {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Left Subsystem & Manifest Drawer */
+    .left-drawer {
+      position: fixed;
+      top: 84px;
+      left: 14px;
+      bottom: 14px;
+      width: 310px;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.25s ease;
+    }
+
+    .left-drawer.collapsed {
+      transform: translateX(-328px);
+    }
+
+    .drawer-toggle {
+      position: fixed;
+      top: 90px;
+      left: 14px;
+      z-index: 16;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--accent);
+      cursor: pointer;
+      display: none;
+    }
+
+    .left-drawer.collapsed + .drawer-toggle {
+      display: block;
+    }
+
+    .drawer-header {
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-header h2 {
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .tiny-btn {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .tiny-btn:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+
+    .subsystem-list {
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      max-height: 295px;
+      overflow-y: auto;
+    }
+
+    .subsystem-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      background: rgba(15, 23, 42, 0.52);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      font-size: 12px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .subsystem-row:hover {
+      border-color: rgba(56, 189, 248, 0.38);
+      background: rgba(20, 34, 58, 0.72);
+    }
+
+    .subsystem-row.dimmed {
+      opacity: 0.48;
+    }
+
+    .sub-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .sub-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sub-name {
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sub-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 6px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .sub-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .icon-btn:hover {
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .icon-btn.off {
+      color: var(--rose);
+      border-color: rgba(251, 113, 133, 0.4);
+    }
+
+    /* Searchable Manifest */
+    .manifest-search {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .manifest-search input {
+      width: 100%;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(6, 11, 20, 0.85);
+      color: #fff;
+      font-size: 12px;
+      font-family: var(--mono);
+      outline: none;
+    }
+
+    .manifest-search input:focus {
+      border-color: var(--accent);
+    }
+
+    .manifest-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .manifest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid transparent;
+      transition: all 0.12s;
+    }
+
+    .manifest-item:hover {
+      background: rgba(30, 58, 108, 0.4);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .manifest-item.selected {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: var(--accent);
+    }
+
+    .manifest-item.hidden-part {
+      opacity: 0.4;
+      text-decoration: line-through;
+    }
+
+    .manifest-id {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      width: 34px;
+      flex-shrink: 0;
+    }
+
+    .manifest-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Right Telemetry & Mode Controls Panel */
+    .right-panel {
+      position: fixed;
+      top: 84px;
+      right: 14px;
+      width: 285px;
+      z-index: 15;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+    }
+
+    .panel-section-title {
+      font-size: 10px;
+      font-family: var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .mode-desc-box {
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: rgba(6, 11, 20, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    .slider-label span:last-child {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      padding: 4px 0;
+    }
+
+    .switch-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      cursor: pointer;
+    }
+
+    .switch-btn.on {
+      background: rgba(52, 211, 153, 0.18);
+      border-color: var(--emerald);
+      color: var(--emerald);
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .stat-card {
+      padding: 8px 9px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .stat-card .k {
+      font-size: 9px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-card .v {
+      font-size: 14px;
+      font-family: var(--mono);
+      font-weight: 700;
+      color: #f8fafc;
+      margin-top: 2px;
+    }
+
+    .camera-presets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .preset-btn {
+      padding: 6px 4px;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--text);
+      font-size: 10.5px;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.16);
+    }
+
+    /* Bottom-Right Selected Part Inspector */
+    .inspector-card {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      width: 285px;
+      z-index: 16;
+      padding: 13px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inspector-card.visible {
+      display: flex;
+    }
+
+    .inspector-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .inspector-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .inspector-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .inspector-specs {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-size: 11px;
+      padding: 8px;
+      border-radius: 7px;
+      background: rgba(6, 11, 20, 0.65);
+    }
+
+    .inspector-specs .lbl {
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    .inspector-specs .val {
+      color: #e2e8f0;
+      text-align: right;
+      font-family: var(--mono);
+    }
+
+    .inspector-desc {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .inspector-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .inspector-actions button {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      background: rgba(56, 189, 248, 0.14);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .inspector-actions button:hover {
+      background: rgba(56, 189, 248, 0.28);
+    }
+
+    /* Floating Hover Tooltip */
+    #hover-tooltip {
+      position: fixed;
+      z-index: 30;
+      pointer-events: none;
+      padding: 6px 10px;
+      border-radius: 7px;
+      background: rgba(6, 11, 20, 0.92);
+      border: 1px solid var(--accent);
+      font-size: 11px;
+      font-family: var(--mono);
+      color: #fff;
+      display: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+      white-space: nowrap;
+    }
+
+    #hover-tooltip .tt-cat {
+      color: var(--accent);
+      font-size: 10px;
+      display: block;
+    }
+
+    /* Bottom center keyboard hint */
+    .bottom-hint {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 12;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.55); }
+
+    @media (max-width: 1120px) {
+      .left-drawer { width: 250px; }
+      .right-panel, .inspector-card { width: 245px; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation & Mode Switcher -->
+  <header class="top-bar hud-panel">
+    <div class="brand">
+      <div class="brand-badge">A350X</div>
+      <div class="brand-title">
+        <h1>Aero-350X Widebody Twinjet</h1>
+        <p>MULTI-PART 3D ENGINEERING ASSEMBLY // THREE.JS</p>
+      </div>
+    </div>
+
+    <nav class="mode-switcher" id="mode-switcher" aria-label="Aircraft View Modes">
+      <button class="mode-btn active" data-mode="finished" id="btn-mode-finished">
+        <span class="mode-key">1</span> Finished Plane
+      </button>
+      <button class="mode-btn" data-mode="xray" id="btn-mode-xray">
+        <span class="mode-key">2</span> X-Ray View
+      </button>
+      <button class="mode-btn" data-mode="cutaway" id="btn-mode-cutaway">
+        <span class="mode-key">3</span> Cutaway
+      </button>
+      <button class="mode-btn" data-mode="exploded" id="btn-mode-exploded">
+        <span class="mode-key">4</span> Exploded View
+      </button>
+      <button class="mode-btn" data-mode="layout" id="btn-mode-layout">
+        <span class="mode-key">5</span> Lay Every Part Out
+      </button>
+    </nav>
+
+    <div class="live-counter-pill" id="live-part-counter" aria-live="polite">
+      <div class="counter-block">
+        <span class="counter-label">Live Active Parts</span>
+        <span class="counter-value" id="live-visible-count">0</span>
+      </div>
+      <div class="counter-divider"></div>
+      <div class="counter-block" style="align-items:flex-start;">
+        <span class="counter-label">Total Built</span>
+        <span class="counter-sub" id="live-total-count">0 Parts</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Left Drawer: Subsystem Filters + Searchable Parts Manifest -->
+  <aside class="left-drawer hud-panel" id="left-drawer">
+    <div class="drawer-header">
+      <h2>Subsystems &amp; Live Count</h2>
+      <div style="display:flex;gap:5px;">
+        <button class="tiny-btn" id="btn-show-all">Show All</button>
+        <button class="tiny-btn" id="btn-collapse-drawer">Hide</button>
+      </div>
+    </div>
+    <div class="subsystem-list" id="subsystem-list"></div>
+
+    <div class="drawer-header" style="padding-top:9px;padding-bottom:7px;">
+      <h2>Part Manifest (<span id="manifest-count">0</span>)</h2>
+    </div>
+    <div class="manifest-search">
+      <input type="text" id="part-search" placeholder="Filter parts (e.g. Fan, Suite, Spar)..." />
+    </div>
+    <div class="manifest-list" id="manifest-list"></div>
+  </aside>
+  <button class="drawer-toggle hud-panel" id="btn-expand-drawer">Parts &amp; Filters ▸</button>
+
+  <!-- Right Panel: Contextual Mode Controls & Telemetry -->
+  <aside class="right-panel hud-panel" id="right-panel">
+    <div>
+      <div class="panel-section-title">Active Inspection Mode</div>
+      <div class="mode-desc-box" id="mode-description">
+        Loading aircraft CAD assemblies...
+      </div>
+    </div>
+
+    <div class="control-group" id="contextual-controls">
+      <div class="slider-row" id="explode-control" style="display:none;">
+        <div class="slider-label">
+          <span>Explosion Separation</span>
+          <span id="explode-val">1.00×</span>
+        </div>
+        <input type="range" id="explode-slider" min="0" max="2.0" step="0.02" value="1.0" />
+      </div>
+
+      <div class="slider-row" id="cutaway-control" style="display:none;">
+        <div class="slider-label">
+          <span>Section Slice Plane (Z)</span>
+          <span id="cutaway-val">Full</span>
+        </div>
+        <input type="range" id="cutaway-slider" min="-33" max="33" step="0.5" value="33" />
+      </div>
+
+      <div class="toggle-row">
+        <span>Turbofan &amp; Beacon Anim</span>
+        <button class="switch-btn on" id="toggle-anim">ACTIVE</button>
+      </div>
+      <div class="toggle-row" id="xray-combine-row" style="display:none;">
+        <span>Ghost Outer Skins (X-Ray)</span>
+        <button class="switch-btn" id="toggle-xray-overlay">OFF</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Live Telemetry</div>
+      <div class="telemetry-grid">
+        <div class="stat-card">
+          <div class="k">Visible Parts</div>
+          <div class="v" id="tel-visible">0 / 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Subsystems</div>
+          <div class="v" id="tel-cats">8 / 8</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Active Mass</div>
+          <div class="v" id="tel-mass">0 t</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Triangles</div>
+          <div class="v" id="tel-tris">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Camera Views</div>
+      <div class="camera-presets">
+        <button class="preset-btn" data-cam="hero">3/4 Hero</button>
+        <button class="preset-btn" data-cam="side">Port Side</button>
+        <button class="preset-btn" data-cam="top">Top Plan</button>
+        <button class="preset-btn" data-cam="nose">Nose On</button>
+        <button class="preset-btn" data-cam="cockpit">Flight Deck</button>
+        <button class="preset-btn" data-cam="engine">Engine #1</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Selected Part Inspector Card -->
+  <section class="inspector-card hud-panel" id="inspector-card">
+    <div class="inspector-head">
+      <div>
+        <div class="inspector-tag" id="insp-id">PART #001 // FUSELAGE</div>
+        <div class="inspector-title" id="insp-name">Radome Nose Cone</div>
+      </div>
+      <button class="icon-btn" id="insp-close" title="Close Inspector">✕</button>
+    </div>
+    <div class="inspector-specs">
+      <span class="lbl">Material</span><span class="val" id="insp-mat">CFRP Composite</span>
+      <span class="lbl">Est. Mass</span><span class="val" id="insp-mass">240 kg</span>
+      <span class="lbl">Position</span><span class="val" id="insp-pos">(0, 0, 0)</span>
+      <span class="lbl">Layout Scale</span><span class="val" id="insp-scale">100%</span>
+    </div>
+    <div class="inspector-desc" id="insp-desc"></div>
+    <div class="inspector-actions">
+      <button id="insp-focus">Focus Camera</button>
+      <button id="insp-toggle">Hide Part</button>
+    </div>
+  </section>
+
+  <div id="hover-tooltip">
+    <span class="tt-cat">SUBSYSTEM</span>
+    <span class="tt-name">Part Name</span>
+  </div>
+
+  <div class="bottom-hint hud-panel">
+    Drag to Orbit · Right-Drag to Pan · Scroll to Zoom · Click Any Part to Inspect · Keys 1–5 Switch Modes
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    // =========================================================================
+    // 1. SCENE, RENDERER, STUDIO ENVIRONMENT & LIGHTING
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.localClippingEnabled = false;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060b14);
+    scene.fog = new THREE.FogExp2(0x060b14, 0.0014);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.15, 900);
+    camera.position.set(48, 20, 48);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.07;
+    controls.minDistance = 4;
+    controls.maxDistance = 320;
+    controls.target.set(0, 0, 0);
+
+    // Lighting rig
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.75);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    keyLight.position.set(45, 65, 50);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.near = 10;
+    keyLight.shadow.camera.far = 200;
+    keyLight.shadow.camera.left = -45;
+    keyLight.shadow.camera.right = 45;
+    keyLight.shadow.camera.top = 45;
+    keyLight.shadow.camera.bottom = -45;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.95);
+    rimLight.position.set(-50, 22, -45);
+    scene.add(rimLight);
+
+    const underFill = new THREE.DirectionalLight(0x93c5fd, 0.45);
+    underFill.position.set(0, -35, 10);
+    scene.add(underFill);
+
+    // Subtle Hangar Runway Grid (visible in aircraft modes)
+    const hangarGrid = new THREE.GridHelper(140, 56, 0x1e3a5f, 0x0f1f38);
+    hangarGrid.position.y = -5.65;
+    scene.add(hangarGrid);
+
+    const shadowFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(160, 160),
+      new THREE.ShadowMaterial({ opacity: 0.35 })
+    );
+    shadowFloor.rotation.x = -Math.PI / 2;
+    shadowFloor.position.y = -5.64;
+    shadowFloor.receiveShadow = true;
+    scene.add(shadowFloor);
+
+    // =========================================================================
+    // 2. PROCEDURAL CANVAS TEXTURES & SHARED PBR MATERIALS
+    // =========================================================================
+    function createFuselageLiveryTexture() {
+      const c = document.createElement('canvas');
+      c.width = 2048;
+      c.height = 1024;
+      const ctx = c.getContext('2d');
+
+      // Base pearl white upper, sapphire belly
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      // Belly deep blue paint (bottom portion of wrap: v near 0.65..1.0)
+      const bellyGrad = ctx.createLinearGradient(0, 620, 0, 1024);
+      bellyGrad.addColorStop(0, '#0c4a6e');
+      bellyGrad.addColorStop(0.35, '#0f294a');
+      bellyGrad.addColorStop(1, '#08152b');
+      ctx.fillStyle = bellyGrad;
+      ctx.fillRect(0, 640, c.width, 384);
+
+      // Gold & cyan aerodynamic cheatline stripes along midline
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(0, 598, c.width, 28);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(0, 586, c.width, 10);
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(0, 628, c.width, 8);
+
+      // Panel seam lines (subtle aerospace skin panel grid)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < c.width; x += 128) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, c.height);
+        ctx.stroke();
+      }
+      for (let y = 128; y < c.height; y += 128) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(c.width, y);
+        ctx.stroke();
+      }
+
+      // Cabin oval windows strip (y around 470..525)
+      for (let x = 60; x < c.width - 60; x += 42) {
+        // Leave door gaps
+        if ((x > 340 && x < 430) || (x > 980 && x < 1070) || (x > 1640 && x < 1730)) continue;
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(x - 10, 466, 22, 36, 9);
+        ctx.fill();
+
+        const winGrad = ctx.createLinearGradient(x, 468, x, 500);
+        winGrad.addColorStop(0, '#0f172a');
+        winGrad.addColorStop(0.55, '#1e3a5f');
+        winGrad.addColorStop(1, '#7dd3fc');
+        ctx.fillStyle = winGrad;
+        ctx.beginPath();
+        ctx.roundRect(x - 7, 469, 16, 30, 7);
+        ctx.fill();
+      }
+
+      // Airline title typography along upper fwd
+      ctx.fillStyle = '#0f294a';
+      ctx.font = 'bold 54px Inter, sans-serif';
+      ctx.fillText('AERO-350X', 480, 390);
+      ctx.fillStyle = '#0284c7';
+      ctx.font = '600 22px monospace';
+      ctx.fillText('WIDEBODY TWINJET // COMPOSITE AIRFRAME', 484, 424);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function createSpinnerSpiralTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 28;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let t = 0; t < Math.PI * 5; t += 0.08) {
+        const r = 14 * t;
+        const x = 256 + Math.cos(t) * r;
+        const y = 256 + Math.sin(t) * r;
+        if (t === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createAvionicsScreenTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // PFD artificial horizon + ND radar arcs
+      for (let i = 0; i < 4; i++) {
+        const sx = 12 + i * 124;
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(sx, 16, 114, 224);
+
+        if (i === 0 || i === 3) {
+          // PFD Sky/Ground
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(sx + 6, 22, 102, 106);
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(sx + 6, 128, 102, 106);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(sx + 18, 128);
+          ctx.lineTo(sx + 96, 128);
+          ctx.stroke();
+          ctx.fillStyle = '#22c55e';
+          ctx.font = 'bold 14px monospace';
+          ctx.fillText('FL390  M0.85', sx + 12, 42);
+        } else {
+          // ND Radar & Route
+          ctx.fillStyle = '#050b18';
+          ctx.fillRect(sx + 6, 22, 102, 212);
+          ctx.strokeStyle = '#22d3ee';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(sx + 57, 195, 72, Math.PI * 1.15, Math.PI * 1.85);
+          ctx.stroke();
+          ctx.strokeStyle = '#d946ef';
+          ctx.beginPath();
+          ctx.moveTo(sx + 57, 195);
+          ctx.lineTo(sx + 44, 110);
+          ctx.lineTo(sx + 74, 52);
+          ctx.stroke();
+        }
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createCabinFloorTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 1024;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, 512, 1024);
+
+      // Twin widebody aisles
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(142, 0, 48, 1024);
+      ctx.fillRect(322, 0, 48, 1024);
+
+      // Luminous emergency floor escape path strips
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(145, 0, 4, 1024);
+      ctx.fillRect(363, 0, 4, 1024);
+
+      // Subtle carpet weave
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      for (let y = 0; y < 1024; y += 16) {
+        ctx.fillRect(0, y, 512, 4);
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1, 6);
+      return tex;
+    }
+
+    function createTailLiveryTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 512, 512);
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(0.55, '#0f294a');
+      grad.addColorStop(1, '#08152b');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Stylized orbital wing emblem
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.arc(270, 260, 125, Math.PI * 0.75, Math.PI * 1.9);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(290, 270, 88, Math.PI * 0.85, Math.PI * 1.85);
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    const liveryTex = createFuselageLiveryTexture();
+    const spinnerTex = createSpinnerSpiralTexture();
+    const avionicsTex = createAvionicsScreenTexture();
+    const floorTex = createCabinFloorTexture();
+    const tailTex = createTailLiveryTexture();
+
+    const MATS = {
+      fuselageLivery: new THREE.MeshPhysicalMaterial({
+        map: liveryTex,
+        roughness: 0.22,
+        metalness: 0.12,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.12,
+        side: THREE.DoubleSide
+      }),
+      radomeWhite: new THREE.MeshPhysicalMaterial({
+        color: 0xf8fafc,
+        roughness: 0.24,
+        metalness: 0.08,
+        clearcoat: 0.85,
+        side: THREE.DoubleSide
+      }),
+      bellyBlue: new THREE.MeshPhysicalMaterial({
+        color: 0x0c2444,
+        roughness: 0.28,
+        metalness: 0.2,
+        clearcoat: 0.7,
+        side: THREE.DoubleSide
+      }),
+      doorWhite: new THREE.MeshPhysicalMaterial({
+        color: 0xe2e8f0,
+        roughness: 0.25,
+        metalness: 0.18,
+        clearcoat: 0.75,
+        side: THREE.DoubleSide
+      }),
+      cockpitGlass: new THREE.MeshPhysicalMaterial({
+        color: 0x0f172a,
+        roughness: 0.08,
+        metalness: 0.15,
+        transmission: 0.42,
+        transparent: true,
+        opacity: 0.82,
+        clearcoat: 1.0,
+        side: THREE.DoubleSide
+      }),
+      wingSkin: new THREE.MeshPhysicalMaterial({
+        color: 0xe2e8f0,
+        roughness: 0.3,
+        metalness: 0.28,
+        clearcoat: 0.6,
+        side: THREE.DoubleSide
+      }),
+      controlSurface: new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        roughness: 0.35,
+        metalness: 0.35,
+        side: THREE.DoubleSide
+      }),
+      tailLivery: new THREE.MeshPhysicalMaterial({
+        map: tailTex,
+        roughness: 0.26,
+        metalness: 0.18,
+        clearcoat: 0.8,
+        side: THREE.DoubleSide
+      }),
+      aluFrame: new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        roughness: 0.36,
+        metalness: 0.78,
+        side: THREE.DoubleSide
+      }),
+      goldBulkhead: new THREE.MeshStandardMaterial({
+        color: 0xc8a45c,
+        roughness: 0.38,
+        metalness: 0.72,
+        side: THREE.DoubleSide
+      }),
+      titanium: new THREE.MeshStandardMaterial({
+        color: 0x64748b,
+        roughness: 0.28,
+        metalness: 0.88,
+        side: THREE.DoubleSide
+      }),
+      chrome: new THREE.MeshStandardMaterial({
+        color: 0xf1f5f9,
+        roughness: 0.12,
+        metalness: 0.96,
+        side: THREE.DoubleSide
+      }),
+      darkMetal: new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.45,
+        metalness: 0.75,
+        side: THREE.DoubleSide
+      }),
+      carbonBlade: new THREE.MeshStandardMaterial({
+        color: 0x182130,
+        roughness: 0.28,
+        metalness: 0.65,
+        side: THREE.DoubleSide
+      }),
+      rubber: new THREE.MeshStandardMaterial({
+        color: 0x111827,
+        roughness: 0.88,
+        metalness: 0.05
+      }),
+      cabinFloor: new THREE.MeshStandardMaterial({
+        map: floorTex,
+        roughness: 0.75,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+      }),
+      cargoFloor: new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        roughness: 0.5,
+        metalness: 0.6,
+        side: THREE.DoubleSide
+      }),
+      bizShell: new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        roughness: 0.45,
+        metalness: 0.2
+      }),
+      bizLeather: new THREE.MeshStandardMaterial({
+        color: 0x7c2d12,
+        roughness: 0.55,
+        metalness: 0.08
+      }),
+      econFabric: new THREE.MeshStandardMaterial({
+        color: 0x1d4ed8,
+        roughness: 0.78,
+        metalness: 0.05
+      }),
+      econHeadrest: new THREE.MeshStandardMaterial({
+        color: 0x0ea5e9,
+        roughness: 0.65,
+        metalness: 0.05
+      }),
+      galleySteel: new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        roughness: 0.35,
+        metalness: 0.75
+      }),
+      overheadBin: new THREE.MeshStandardMaterial({
+        color: 0xf1f5f9,
+        roughness: 0.48,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+      }),
+      uldAlu: new THREE.MeshStandardMaterial({
+        color: 0xb8c4d4,
+        roughness: 0.35,
+        metalness: 0.82
+      }),
+      fuelBladder: new THREE.MeshPhysicalMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0369a1,
+        emissiveIntensity: 0.25,
+        roughness: 0.25,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.78
+      }),
+      combustorGlow: new THREE.MeshStandardMaterial({
+        color: 0xf97316,
+        emissive: 0xea580c,
+        emissiveIntensity: 0.85,
+        roughness: 0.35,
+        metalness: 0.5
+      }),
+      avionicsScreen: new THREE.MeshStandardMaterial({
+        map: avionicsTex,
+        emissive: 0x38bdf8,
+        emissiveMap: avionicsTex,
+        emissiveIntensity: 0.75,
+        roughness: 0.2
+      }),
+      spinnerMat: new THREE.MeshStandardMaterial({
+        map: spinnerTex,
+        roughness: 0.25,
+        metalness: 0.35
+      }),
+      ecsBlue: new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        roughness: 0.38,
+        metalness: 0.6
+      }),
+      radarGold: new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        roughness: 0.3,
+        metalness: 0.85
+      })
+    };
+
+    // =========================================================================
+    // 3. SUBSYSTEM METADATA & PART REGISTRY
+    // =========================================================================
+    const CATEGORIES = {
+      fuselage:  { label: 'Fuselage & Outer Skin',     color: '#38bdf8', xrayHex: 0x38bdf8 },
+      structure: { label: 'Airframe Structure',        color: '#60a5fa', xrayHex: 0x3b82f6 },
+      cockpit:   { label: 'Flight Deck & Avionics',    color: '#34d399', xrayHex: 0x10b981 },
+      cabin:     { label: 'Cabin, Seats & Cargo ULDs', color: '#fbbf24', xrayHex: 0xf59e0b },
+      wings:     { label: 'Wings, Control & Fuel',     color: '#a78bfa', xrayHex: 0x8b5cf6 },
+      engines:   { label: 'High-Bypass Turbofans',     color: '#fb7185', xrayHex: 0xf43f5e },
+      empennage: { label: 'Tail Empennage & APU',      color: '#2dd4bf', xrayHex: 0x14b8a6 },
+      systems:   { label: 'Landing Gear & ECS',        color: '#f472b6', xrayHex: 0xec4899 }
+    };
+
+    const CATEGORY_ORDER = Object.keys(CATEGORIES);
+    const categoryVisible = Object.fromEntries(CATEGORY_ORDER.map(k => [k, true]));
+
+    const aircraftGroup = new THREE.Group();
+    scene.add(aircraftGroup);
+
+    const parts = [];
+    const animatedFanRotors = [];
+    const navLights = [];
+    const clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 0, -1), 33)];
+
+    let partSerial = 1;
+
+    function registerPart({
+      name,
+      category,
+      object,
+      assembledPos = null,
+      assembledRot = new THREE.Euler(0, 0, 0),
+      explodedOffset = new THREE.Vector3(0, 0, 0),
+      explodedRot = new THREE.Euler(0, 0, 0),
+      cutawayAction = 'keep',
+      isOuterShell = false,
+      specs = {}
+    }) {
+      const id = `P-${String(partSerial++).padStart(3, '0')}`;
+      const root = new THREE.Group();
+      root.name = id;
+
+      // Wrap object in root so local origin is always geometric center of the part
+      object.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(object);
+      const center = new THREE.Vector3();
+      if (!box.isEmpty()) {
+        box.getCenter(center);
+      }
+
+      if (assembledPos) {
+        // Object was built around local origin, placed at assembledPos
+        object.position.sub(center);
+        root.add(object);
+        const worldCenter = assembledPos.clone().add(center);
+        root.position.copy(worldCenter);
+        assembledPos = worldCenter;
+      } else {
+        // Object was built in aircraft-world space; recenter it inside root
+        object.position.sub(center);
+        root.add(object);
+        root.position.copy(center);
+        assembledPos = center.clone();
+      }
+
+      root.rotation.copy(assembledRot);
+      aircraftGroup.add(root);
+
+      const part = {
+        id,
+        name,
+        category,
+        root,
+        object,
+        assembledPos: assembledPos.clone(),
+        assembledRot: assembledRot.clone(),
+        assembledQuat: new THREE.Quaternion().setFromEuler(assembledRot),
+        explodedOffset: explodedOffset.clone(),
+        explodedQuat: new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(
+            assembledRot.x + explodedRot.x,
+            assembledRot.y + explodedRot.y,
+            assembledRot.z + explodedRot.z
+          )
+        ),
+        cutawayAction,
+        isOuterShell,
+        specs: {
+          material: specs.material || 'Aerospace Grade Alloy',
+          massKg: specs.massKg || 120,
+          description: specs.description || `${name} assembly belonging to ${CATEGORIES[category].label}.`
+        },
+        userVisible: true,
+        modeVisible: true,
+        layoutPos: new THREE.Vector3(),
+        layoutQuat: new THREE.Quaternion(),
+        layoutScale: 1.0,
+        meshes: [],
+        triCount: 0
+      };
+
+      root.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.userData.partId = id;
+          child.userData.originalMaterial = child.material;
+          part.meshes.push(child);
+
+          const geom = child.geometry;
+          if (geom.index) part.triCount += geom.index.count / 3;
+          else if (geom.attributes.position) part.triCount += geom.attributes.position.count / 3;
+        }
+      });
+
+      parts.push(part);
+      return part;
+    }
+
+    // =========================================================================
+    // 4. AIRCRAFT GEOMETRIC PROFILE HELPERS
+    // =========================================================================
+    const FUSELAGE_R = 3.05;
+    const FUSELAGE_SCALE_Y = 1.06;
+
+    function getFuselageRadius(z) {
+      if (z >= 19.0) {
+        const t = Math.min(1, Math.max(0, (z - 19.0) / 12.5));
+        return Math.max(0.02, FUSELAGE_R * Math.pow(Math.max(0, 1 - Math.pow(t, 1.85)), 0.56));
+      }
+      if (z <= -9.0) {
+        const t = Math.min(1, Math.max(0, (-9.0 - z) / 22.5));
+        return Math.max(0.32, FUSELAGE_R * (1 - 0.89 * Math.pow(t, 1.32)));
+      }
+      return FUSELAGE_R;
+    }
+
+    function getFuselageCenterY(z) {
+      if (z >= 19.0) {
+        const t = Math.min(1, Math.max(0, (z - 19.0) / 12.5));
+        return -0.72 * t * t;
+      }
+      if (z <= -9.0) {
+        const t = Math.min(1, Math.max(0, (-9.0 - z) / 22.5));
+        return 1.15 * Math.pow(t, 1.35);
+      }
+      return 0;
+    }
+
+    /**
+     * Parametric curved fuselage shell panel with exact aircraft UVs.
+     * Angle a: 0 = top (+Y), +PI/2 = Port (+X), PI = bottom (-Y), -PI/2 = Starboard (-X)
+     */
+    function createFuselageShellGeometry({ zAft, zFwd, angleStart, angleEnd, segZ = 14, segA = 18 }) {
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+
+      for (let iz = 0; iz <= segZ; iz++) {
+        const z = zAft + (zFwd - zAft) * (iz / segZ);
+        const r = getFuselageRadius(z);
+        const cy = getFuselageCenterY(z);
+        const u = (31.5 - z) / 63.0; // 0 at nose, 1 at tail
+
+        for (let ia = 0; ia <= segA; ia++) {
+          const a = angleStart + (angleEnd - angleStart) * (ia / segA);
+          const x = r * Math.sin(a);
+          const y = cy + r * FUSELAGE_SCALE_Y * Math.cos(a);
+          positions.push(x, y, z);
+
+          // Map |a| in [0, PI] to v in [1, 0] (CanvasTexture: v=1 top, v=0 bottom in WebGL)
+          const absAngle = Math.abs(((a % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+          //Wait: let's map cos(a): top (+1)->v=0.95, midline (0)->v=0.45, bottom (-1)->v=0.05
+          const v = 0.5 + 0.48 * Math.cos(a);
+          uvs.push(u, v);
+        }
+      }
+
+      const stride = segA + 1;
+      for (let iz = 0; iz < segZ; iz++) {
+        for (let ia = 0; ia < segA; ia++) {
+          const i0 = iz * stride + ia;
+          const i1 = i0 + 1;
+          const i2 = i0 + stride;
+          const i3 = i2 + 1;
+          indices.push(i0, i2, i1);
+          indices.push(i1, i2, i3);
+        }
+      }
+
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    // Swept Airfoil Wing Profile Helper
+    function getWingSection(absX) {
+      const xRoot = 2.8;
+      const xKink = 10.6;
+      const xTip = 29.5;
+      const x = Math.min(xTip, Math.max(xRoot, absX));
+
+      let zLE, zTE, yCenter, thickness;
+      if (x <= xKink) {
+        const t = (x - xRoot) / (xKink - xRoot);
+        zLE = 5.4 - t * 3.4;    // 5.4 -> 2.0
+        zTE = -4.6 - t * 0.6;   // -4.6 -> -5.2
+        yCenter = -1.25 + t * 0.65;
+        thickness = 1.08 - t * 0.34;
+      } else {
+        const t = (x - xKink) / (xTip - xKink);
+        zLE = 2.0 - t * 11.4;   // 2.0 -> -9.4
+        zTE = -5.2 - t * 7.5;   // -5.2 -> -12.7
+        yCenter = -0.60 + t * 1.95;
+        thickness = 0.74 - t * 0.44;
+      }
+      return { zLE, zTE, chord: zLE - zTE, yCenter, thickness };
+    }
+
+    function createWingSkinGeometry({ side, isUpper, segX = 24, segC = 16 }) {
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+      const xStart = 2.8;
+      const xEnd = 29.5;
+
+      for (let ix = 0; ix <= segX; ix++) {
+        const absX = xStart + (xEnd - xStart) * (ix / segX);
+        const sec = getWingSection(absX);
+        const x = side * absX;
+
+        for (let ic = 0; ic <= segC; ic++) {
+          const s = ic / segC; // 0 = Leading Edge, 1 = Trailing Edge
+          const z = sec.zLE - s * sec.chord;
+          // NACA-style thickness distribution
+          const halfT = 5 * sec.thickness * (
+            0.2969 * Math.sqrt(s) - 0.1260 * s - 0.3516 * s * s + 0.2843 * Math.pow(s, 3) - 0.1015 * Math.pow(s, 4)
+          );
+          const camber = 0.09 * sec.thickness * Math.sin(Math.PI * s);
+          const y = sec.yCenter + camber + (isUpper ? halfT : -halfT * 0.62);
+
+          positions.push(x, y, z);
+          uvs.push(ix / segX, s);
+        }
+      }
+
+      const stride = segC + 1;
+      for (let ix = 0; ix < segX; ix++) {
+        for (let ic = 0; ic < segC; ic++) {
+          const i0 = ix * stride + ic;
+          const i1 = i0 + 1;
+          const i2 = i0 + stride;
+          const i3 = i2 + 1;
+          if ((side > 0 && isUpper) || (side < 0 && !isUpper)) {
+            indices.push(i0, i1, i2);
+            indices.push(i1, i3, i2);
+          } else {
+            indices.push(i0, i2, i1);
+            indices.push(i1, i2, i3);
+          }
+        }
+      }
+
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    // =========================================================================
+    // 5. BUILD SUBSYSTEM 1: FUSELAGE & OUTER SKIN (26 PARTS)
+    // =========================================================================
+    const RAD = Math.PI / 180;
+
+    // 1. Radome Nose Cone (Z: 25.5 to 31.5)
+    {
+      const geom = createFuselageShellGeometry({
+        zAft: 25.5, zFwd: 31.5, angleStart: -Math.PI, angleEnd: Math.PI, segZ: 18, segA: 28
+      });
+      const mesh = new THREE.Mesh(geom, MATS.radomeWhite);
+      registerPart({
+        name: 'Radome Composite Nose Cone',
+        category: 'fuselage',
+        object: mesh,
+        explodedOffset: new THREE.Vector3(0, 0, 14),
+        isOuterShell: true,
+        specs: { material: 'Quartz-Epoxy Dielectric Radome', massKg: 145, description: 'Aerodynamic nose radome transparent to X-band phased-array weather radar beams.' }
+      });
+    }
+
+    // 2. Cockpit Crown & Glazing Fairing (Z: 22.5 to 25.5)
+    {
+      const geom = createFuselageShellGeometry({
+        zAft: 22.5, zFwd: 25.5, angleStart: -Math.PI, angleEnd: Math.PI, segZ: 10, segA: 28
+      });
+      const mesh = new THREE.Mesh(geom, MATS.fuselageLivery);
+      registerPart({
+        name: 'Cockpit Nose Barrel Fairing',
+        category: 'fuselage',
+        object: mesh,
+        explodedOffset: new THREE.Vector3(0, 3.5, 9.5),
+        cutawayAction: 'hide',
+        isOuterShell: true,
+        specs: { material: 'CFRP / Aluminum-Lithium Skin', massKg: 410, description: 'Contoured forward fuselage crown housing flight deck glazing frames and static ports.' }
+      });
+    }
+
+    // 3-4. Cockpit Armored Windshields (Port & Starboard 3-Pane Arrays)
+    for (const side of [1, -1]) {
+      const grp = new THREE.Group();
+      const paneAngles = [0.22, 0.56, 0.90];
+      paneAngles.forEach((ang, idx) => {
+        const wPane = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.72, 0.07), MATS.cockpitGlass);
+        const r = 2.02 - idx * 0.08;
+        const z = 25.2 - idx * 0.42;
+        const y = 0.68 - idx * 0.06;
+        wPane.position.set(side * Math.sin(ang) * r, y, z);
+        wPane.rotation.y = side * (ang * 0.95);
+        wPane.rotation.x = -0.46;
+        grp.add(wPane);
+      });
+      registerPart({
+        name: `Cockpit Armored Windshields (${side > 0 ? 'Port' : 'Starboard'} 3-Pane)`,
+        category: 'fuselage',
+        object: grp,
+        explodedOffset: new THREE.Vector3(side * 5.5, 4.5, 11),
+        cutawayAction: side > 0 ? 'hide' : 'keep',
+        isOuterShell: true,
+        specs: { material: 'Multi-Ply Tempered Glass + Urethane', massKg: 115, description: 'Heated bird-strike-resistant cockpit glazing assembly with anti-ice conductive film.' }
+      });
+    }
+
+    // 5-14. Split Upper Fuselage Barrel Skins (5 Longitudinal Sections × Port/Starboard)
+    const upperSections = [
+      { label: 'Fwd Upper Cabin Skin',      zAft: 15.0, zFwd: 22.5, expZ: 5.5 },
+      { label: 'Mid-Fwd Upper Cabin Skin',  zAft: 7.5,  zFwd: 15.0, expZ: 2.5 },
+      { label: 'Overwing Upper Cabin Skin', zAft: -1.0, zFwd: 7.5,  expZ: 0.0 },
+      { label: 'Mid-Aft Upper Cabin Skin',  zAft: -9.5, zFwd: -1.0, expZ: -3.0 },
+      { label: 'Aft Upper Cabin Skin',      zAft: -18.5,zFwd: -9.5, expZ: -6.5 }
+    ];
+    upperSections.forEach(sec => {
+      for (const side of [1, -1]) {
+        const angleStart = side > 0 ? 0 : -118 * RAD;
+        const angleEnd = side > 0 ? 118 * RAD : 0;
+        const geom = createFuselageShellGeometry({
+          zAft: sec.zAft, zFwd: sec.zFwd, angleStart, angleEnd, segZ: 12, segA: 16
+        });
+        const mesh = new THREE.Mesh(geom, MATS.fuselageLivery);
+        registerPart({
+          name: `${sec.label} (${side > 0 ? 'Port' : 'Starboard'})`,
+          category: 'fuselage',
+          object: mesh,
+          explodedOffset: new THREE.Vector3(side * 10.5, 6.5, sec.expZ),
+          cutawayAction: side > 0 ? 'hide' : 'keep',
+          isOuterShell: true,
+          specs: { material: 'CFRP Honeycomb Composite Skin', massKg: 580, description: 'Pressurized fuselage barrel skin panel with integral window beltline and aerodynamic livery.' }
+        });
+      }
+    });
+
+    // 15-17. Lower Belly Cargo & Wingbox Fairing Skins (3 Parts)
+    const bellySections = [
+      { name: 'Fwd Lower Belly Cargo Skin', zAft: 7.5, zFwd: 22.5, expZ: 4.5, mass: 620 },
+      { name: 'Center Wingbox Belly Fairing', zAft: -4.0, zFwd: 7.5, expZ: 0, mass: 740 },
+      { name: 'Aft Lower Belly Cargo Skin', zAft: -18.5, zFwd: -4.0, expZ: -5.0, mass: 590 }
+    ];
+    bellySections.forEach(sec => {
+      const geom = createFuselageShellGeometry({
+        zAft: sec.zAft, zFwd: sec.zFwd, angleStart: 118 * RAD, angleEnd: 242 * RAD, segZ: 14, segA: 16
+      });
+      const mesh = new THREE.Mesh(geom, MATS.bellyBlue);
+      registerPart({
+        name: sec.name,
+        category: 'fuselage',
+        object: mesh,
+        explodedOffset: new THREE.Vector3(0, -10.5, sec.expZ),
+        isOuterShell: true,
+        specs: { material: 'Carbon/Kevlar Reinforced Belly Skin', massKg: sec.mass, description: 'Lower pressurized hull and aerodynamic keel fairing enclosing cargo holds and wing-to-body junction.' }
+      });
+    });
+
+    // 18-19. Tail Cone Taper Shells (Port & Starboard)
+    for (const side of [1, -1]) {
+      const geom = createFuselageShellGeometry({
+        zAft: -30.5, zFwd: -18.5,
+        angleStart: side > 0 ? 0 : -Math.PI,
+        angleEnd: side > 0 ? Math.PI : 0,
+        segZ: 16, segA: 16
+      });
+      const mesh = new THREE.Mesh(geom, MATS.fuselageLivery);
+      registerPart({
+        name: `Tail Cone Taper Shell (${side > 0 ? 'Port' : 'Starboard'})`,
+        category: 'fuselage',
+        object: mesh,
+        explodedOffset: new THREE.Vector3(side * 8.5, 3.5, -12.5),
+        cutawayAction: side > 0 ? 'hide' : 'keep',
+        isOuterShell: true,
+        specs: { material: 'CFRP Monocoque Tailcone', massKg: 340, description: 'Unpressurized tapered empennage cone enclosing the APU bay and stabilizer actuators.' }
+      });
+    }
+
+    // 20. APU Titanium Tail Exhaust Cone
+    {
+      const cone = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.42, 1.8, 24, 1, true),
+        MATS.titanium
+      );
+      cone.rotation.x = -Math.PI / 2;
+      cone.position.set(0, getFuselageCenterY(-31.2), -31.2);
+      registerPart({
+        name: 'APU Titanium Tail Exhaust Cone',
+        category: 'fuselage',
+        object: cone,
+        explodedOffset: new THREE.Vector3(0, 1.5, -18),
+        isOuterShell: true,
+        specs: { material: 'Inconel 718 / Titanium Alloy', massKg: 58, description: 'Heat-resistant tail exhaust shroud for the Auxiliary Power Unit gas turbine.' }
+      });
+    }
+
+    // 21-26. 6 Passenger & Service Plug Doors (1L, 1R, 2L, 2R, 3L, 3R)
+    const doorConfigs = [
+      { id: '1L', z: 19.6, side: 1,  label: 'Door 1L Forward Entry' },
+      { id: '1R', z: 19.6, side: -1, label: 'Door 1R Forward Service' },
+      { id: '2L', z: 6.2,  side: 1,  label: 'Door 2L Mid Cabin Entry' },
+      { id: '2R', z: 6.2,  side: -1, label: 'Door 2R Mid Service' },
+      { id: '3L', z: -14.8,side: 1,  label: 'Door 3L Aft Entry' },
+      { id: '3R', z: -14.8,side: -1, label: 'Door 3R Aft Service' }
+    ];
+    doorConfigs.forEach(dc => {
+      const doorGrp = new THREE.Group();
+      const doorSlab = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.82, 1.05), MATS.doorWhite);
+      const doorWin = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 0.24), MATS.cockpitGlass);
+      doorWin.position.set(0, 0.42, 0);
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.32), MATS.chrome);
+      handle.position.set(0, -0.05, 0.22);
+      doorGrp.add(doorSlab, doorWin, handle);
+
+      const r = getFuselageRadius(dc.z) + 0.02;
+      const cy = getFuselageCenterY(dc.z) + 0.35;
+      doorGrp.position.set(dc.side * r * 0.98, cy, dc.z);
+      doorGrp.rotation.z = -dc.side * 0.14;
+
+      registerPart({
+        name: dc.label,
+        category: 'fuselage',
+        object: doorGrp,
+        explodedOffset: new THREE.Vector3(dc.side * 15, 2.5, dc.z * 0.25),
+        cutawayAction: dc.side > 0 ? 'hide' : 'keep',
+        isOuterShell: true,
+        specs: { material: '2024-T3 Aluminum Plug Door + Slide Pack', massKg: 155, description: 'Outward-opening pressure plug door with integrated emergency evacuation slide housing.' }
+      });
+    });
+
+    // =========================================================================
+    // 6. BUILD SUBSYSTEM 2: INTERNAL AIRFRAME STRUCTURE (33 PARTS)
+    // =========================================================================
+    // 27. Forward Pressure Bulkhead
+    {
+      const r = getFuselageRadius(22.5) - 0.1;
+      const bh = new THREE.Mesh(
+        new THREE.CylinderGeometry(r, r, 0.18, 32),
+        MATS.goldBulkhead
+      );
+      bh.rotation.x = Math.PI / 2;
+      bh.scale.set(1, 1, FUSELAGE_SCALE_Y);
+      bh.position.set(0, getFuselageCenterY(22.5), 22.5);
+      registerPart({
+        name: 'Forward Pressure Bulkhead',
+        category: 'structure',
+        object: bh,
+        explodedOffset: new THREE.Vector3(0, 0, 8.2),
+        specs: { material: '7075-T6 Forged Aluminum Alloy', massKg: 290, description: 'Forward pressurized cabin seal separating the flight deck from the unpressurized nose radar bay.' }
+      });
+    }
+
+    // 28. Aft Hemispherical Pressure Bulkhead
+    {
+      const r = getFuselageRadius(-18.5) - 0.1;
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.5),
+        MATS.goldBulkhead
+      );
+      dome.rotation.x = -Math.PI / 2;
+      dome.scale.set(1, 0.62, FUSELAGE_SCALE_Y);
+      dome.position.set(0, getFuselageCenterY(-18.5), -18.5);
+      registerPart({
+        name: 'Aft Hemispherical Pressure Bulkhead',
+        category: 'structure',
+        object: dome,
+        explodedOffset: new THREE.Vector3(0, 0, -9.5),
+        specs: { material: 'CFRP Pressure Dome', massKg: 340, description: 'Domed composite pressure barrier sealing the pressurized passenger cabin from the tailcone.' }
+      });
+    }
+
+    // 29-46. 18 Circumferential Fuselage Ring Frames
+    for (let i = 0; i < 18; i++) {
+      const z = 20.5 - i * 2.22;
+      const r = getFuselageRadius(z) - 0.12;
+      const cy = getFuselageCenterY(z);
+      const torus = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.085, 8, 36),
+        MATS.aluFrame
+      );
+      torus.scale.set(1, FUSELAGE_SCALE_Y, 1);
+      torus.position.set(0, cy, z);
+      registerPart({
+        name: `Fuselage Ring Frame #${String(i + 1).padStart(2, '0')}`,
+        category: 'structure',
+        object: torus,
+        explodedOffset: new THREE.Vector3(0, 1.5 + (i % 2) * 1.2, (z - 2) * 0.38),
+        specs: { material: 'Al-Li 2099 Extruded C-Channel', massKg: 68, description: `Circumferential structural fuselage hoop frame at station Z=${z.toFixed(1)}m.` }
+      });
+    }
+
+    // 47-50. 4 Longitudinal Keel & Spine Longerons
+    const longeronSpecs = [
+      { name: 'Main Longitudinal Keel Beam', x: 0, y: -3.05, w: 0.34, h: 0.28, exp: new THREE.Vector3(0, -7.2, 0) },
+      { name: 'Crown Spine Longeron',        x: 0, y: 3.12,  w: 0.24, h: 0.18, exp: new THREE.Vector3(0, 9.2, 0) },
+      { name: 'Port Cabin Floor Longeron',   x: 2.9, y: -0.35, w: 0.18, h: 0.22, exp: new THREE.Vector3(6.5, 0, 0) },
+      { name: 'Starboard Cabin Floor Longeron', x: -2.9, y: -0.35, w: 0.18, h: 0.22, exp: new THREE.Vector3(-6.5, 0, 0) }
+    ];
+    longeronSpecs.forEach(ls => {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(ls.w, ls.h, 39.5), MATS.titanium);
+      beam.position.set(ls.x, ls.y, 1.5);
+      registerPart({
+        name: ls.name,
+        category: 'structure',
+        object: beam,
+        explodedOffset: ls.exp,
+        specs: { material: 'Ti-6Al-4V / CFRP Structural Beam', massKg: 420, description: 'Primary longitudinal bending load-path beam running along the fuselage barrel.' }
+      });
+    });
+
+    // 51. Main Passenger Cabin Deck Floor
+    {
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 42.5), MATS.cabinFloor);
+      deck.position.set(0, -0.38, 2.2);
+      registerPart({
+        name: 'Main Passenger Cabin Deck Floor',
+        category: 'structure',
+        object: deck,
+        explodedOffset: new THREE.Vector3(0, 1.2, 0),
+        specs: { material: 'Nomex Honeycomb Composite Panel', massKg: 1450, description: 'Full-length widebody passenger floor deck with twin aisles and seat track rails.' }
+      });
+    }
+
+    // 52. Lower Cargo Hold Deck Floor
+    {
+      const cdeck = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.14, 35.0), MATS.cargoFloor);
+      cdeck.position.set(0, -2.28, 1.8);
+      registerPart({
+        name: 'Lower Cargo Hold Deck Floor',
+        category: 'structure',
+        object: cdeck,
+        explodedOffset: new THREE.Vector3(0, -5.0, 0),
+        specs: { material: 'Reinforced Aluminum Roller Track Deck', massKg: 980, description: 'Underfloor baggage and ULD cargo deck with ball-mat roller conveyor tracks.' }
+      });
+    }
+
+    // 53. Center Wing Box Structural Truss
+    {
+      const cwGrp = new THREE.Group();
+      const boxCore = new THREE.Mesh(new THREE.BoxGeometry(5.9, 1.35, 7.6), MATS.titanium);
+      cwGrp.add(boxCore);
+      for (let i = -2; i <= 2; i++) {
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(6.1, 1.48, 0.22), MATS.goldBulkhead);
+        rib.position.z = i * 1.6;
+        cwGrp.add(rib);
+      }
+      cwGrp.position.set(0, -1.22, 0.4);
+      registerPart({
+        name: 'Center Wing Box Structural Truss',
+        category: 'structure',
+        object: cwGrp,
+        explodedOffset: new THREE.Vector3(0, -2.8, 0),
+        specs: { material: 'Titanium-Carbon Monolithic Wing Box', massKg: 2150, description: 'Central load-bearing carry-through structure uniting left and right wing spars beneath the cabin.' }
+      });
+    }
+
+    // 54-57. 4 Main Swept Wing Spars (Port/Starboard Front & Rear)
+    for (const side of [1, -1]) {
+      for (const isFront of [true, false]) {
+        const sparGrp = new THREE.Group();
+        const segs = 12;
+        for (let i = 0; i < segs; i++) {
+          const x0 = 2.8 + (26.5 * i) / segs;
+          const x1 = 2.8 + (26.5 * (i + 1)) / segs;
+          const s0 = getWingSection(x0);
+          const s1 = getWingSection(x1);
+          const p0 = new THREE.Vector3(side * x0, s0.yCenter, isFront ? s0.zLE - s0.chord * 0.22 : s0.zLE - s0.chord * 0.68);
+          const p1 = new THREE.Vector3(side * x1, s1.yCenter, isFront ? s1.zLE - s1.chord * 0.22 : s1.zLE - s1.chord * 0.68);
+          const len = p0.distanceTo(p1);
+          const h = ((s0.thickness + s1.thickness) * 0.5) * (isFront ? 0.85 : 0.72);
+          const beam = new THREE.Mesh(new THREE.BoxGeometry(len + 0.08, h, 0.16), MATS.goldBulkhead);
+          beam.position.copy(p0).lerp(p1, 0.5);
+          beam.lookAt(p1);
+          beam.rotateY(Math.PI / 2);
+          sparGrp.add(beam);
+        }
+        registerPart({
+          name: `${side > 0 ? 'Port' : 'Starboard'} Wing ${isFront ? 'Front' : 'Rear'} Main Spar`,
+          category: 'structure',
+          object: sparGrp,
+          explodedOffset: new THREE.Vector3(side * 12, 0.5, isFront ? 3.5 : -3.5),
+          specs: { material: 'CFRP I-Beam Composite Spar', massKg: 780, description: `Primary ${isFront ? 'forward' : 'aft'} wing bending spar spanning from fuselage wingbox to wingtip.` }
+        });
+      }
+    }
+
+    // 58-59. Port & Starboard Wing Structural Ribs Set (14 Ribs each)
+    for (const side of [1, -1]) {
+      const ribsGrp = new THREE.Group();
+      for (let i = 0; i < 14; i++) {
+        const absX = 3.5 + i * 1.92;
+        const sec = getWingSection(absX);
+        const ribLen = sec.chord * 0.52;
+        const ribZ = sec.zLE - sec.chord * 0.45;
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(0.11, sec.thickness * 0.78, ribLen), MATS.aluFrame);
+        rib.position.set(side * absX, sec.yCenter, ribZ);
+        ribsGrp.add(rib);
+      }
+      registerPart({
+        name: `${side > 0 ? 'Port' : 'Starboard'} Wing Structural Ribs Set (14 Ribs)`,
+        category: 'structure',
+        object: ribsGrp,
+        explodedOffset: new THREE.Vector3(side * 12, 1.5, 0),
+        specs: { material: 'CNC Machined 7050-T7451 Aluminum', massKg: 540, description: 'Fourteen aerodynamic airfoil profile ribs maintaining wing torsion box geometry and fuel baffles.' }
+      });
+    }
+
+    // =========================================================================
+    // 7. BUILD SUBSYSTEM 3: FLIGHT DECK & AVIONICS (9 PARTS)
+    // =========================================================================
+    // 60. Phased-Array Weather Radar Assembly
+    {
+      const rGrp = new THREE.Group();
+      const dish = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.02, 0.14, 24), MATS.radarGold);
+      dish.rotation.x = Math.PI / 2;
+      const gimbal = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.85), MATS.darkMetal);
+      gimbal.position.z = -0.55;
+      rGrp.add(dish, gimbal);
+      rGrp.position.set(0, -0.38, 27.6);
+      registerPart({
+        name: 'Phased-Array Weather Radar Assembly',
+        category: 'cockpit',
+        object: rGrp,
+        explodedOffset: new THREE.Vector3(0, 0.5, 11.5),
+        specs: { material: 'Gold-Plated Slotted Waveguide Array', massKg: 62, description: 'Solid-state X-band meteorological & windshear detection radar mounted on forward bulkhead.' }
+      });
+    }
+
+    // 61. Forward Avionics E/E Bay Rack
+    {
+      const eeGrp = new THREE.Group();
+      const rack = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.15, 2.2), MATS.darkMetal);
+      eeGrp.add(rack);
+      for (let i = 0; i < 6; i++) {
+        const lru = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.9), i % 2 ? MATS.titanium : MATS.aluFrame);
+        lru.position.set(-0.6 + (i % 3) * 0.6, i < 3 ? 0.25 : -0.25, 0.45);
+        eeGrp.add(lru);
+      }
+      eeGrp.position.set(0, -1.42, 23.6);
+      registerPart({
+        name: 'Forward Avionics E/E Bay Rack',
+        category: 'cockpit',
+        object: eeGrp,
+        explodedOffset: new THREE.Vector3(0, -6.5, 7.5),
+        specs: { material: 'ARINC 600 Modular Avionics Racks', massKg: 385, description: 'Lower-deck Electrical & Electronics bay housing flight control computers and ADIRUs.' }
+      });
+    }
+
+    // 62. Main Glass Cockpit Instrument Panel (6 EFIS Displays)
+    {
+      const pGrp = new THREE.Group();
+      const dash = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.68, 0.65), MATS.darkMetal);
+      const screens = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.46), MATS.avionicsScreen);
+      screens.position.set(0, 0.04, -0.33);
+      screens.rotation.y = Math.PI;
+      const glare = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.1, 0.78), MATS.darkMetal);
+      glare.position.set(0, 0.36, 0.02);
+      pGrp.add(dash, screens, glare);
+      pGrp.position.set(0, 0.48, 24.85);
+      registerPart({
+        name: 'Main Glass Cockpit EFIS Panel (6 Displays)',
+        category: 'cockpit',
+        object: pGrp,
+        explodedOffset: new THREE.Vector3(0, 3.8, 7.2),
+        specs: { material: 'Active-Matrix LCD / Magnesium Frame', massKg: 74, description: 'Six large-format flight displays (PFD, ND, ECAM) with integrated Mode Control Panel glareshield.' }
+      });
+    }
+
+    // 63. Center Control Pedestal & Thrust Levers
+    {
+      const pedGrp = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.58, 1.3), MATS.darkMetal);
+      const throttle1 = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.28, 0.09), MATS.chrome);
+      throttle1.position.set(-0.08, 0.36, 0.15);
+      throttle1.rotation.x = 0.28;
+      const throttle2 = throttle1.clone();
+      throttle2.position.x = 0.08;
+      const mcdu = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.55), MATS.avionicsScreen);
+      mcdu.rotation.x = -Math.PI / 2 + 0.12;
+      mcdu.position.set(0, 0.3, -0.3);
+      pedGrp.add(base, throttle1, throttle2, mcdu);
+      pedGrp.position.set(0, 0.02, 23.95);
+      registerPart({
+        name: 'Center Control Pedestal & Thrust Levers',
+        category: 'cockpit',
+        object: pedGrp,
+        explodedOffset: new THREE.Vector3(0, 2.5, 6.2),
+        specs: { material: 'Anodized Aluminum / Carbon Levers', massKg: 42, description: 'Twin autothrottle levers, FMS MCDU keypads, speedbrake, flap detent, and radio panels.' }
+      });
+    }
+
+    // 64. Overhead Systems Switch Panel
+    {
+      const ovh = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 1.45), MATS.darkMetal);
+      ovh.position.set(0, 1.38, 23.85);
+      ovh.rotation.x = 0.22;
+      registerPart({
+        name: 'Overhead Cockpit Systems Switch Panel',
+        category: 'cockpit',
+        object: ovh,
+        explodedOffset: new THREE.Vector3(0, 6.0, 6.5),
+        specs: { material: 'Backlit Korry Pushbutton Matrix', massKg: 28, description: 'Overhead panel governing electrical buses, APU, hydraulics, fuel pumps, and cabin pressurization.' }
+      });
+    }
+
+    // 65-66. Captain & First Officer Ergonomic Pilot Seats
+    for (const side of [1, -1]) {
+      const sGrp = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.18, 0.58), MATS.darkMetal);
+      const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.14, 0.6), MATS.bizShell);
+      cushion.position.y = 0.16;
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.85, 0.14), MATS.bizShell);
+      back.position.set(0, 0.58, -0.25);
+      back.rotation.x = -0.14;
+      const headrest = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.12), MATS.econHeadrest);
+      headrest.position.set(0, 1.06, -0.32);
+      sGrp.add(base, cushion, back, headrest);
+      sGrp.position.set(side * 0.72, -0.22, 23.45);
+      registerPart({
+        name: `${side > 0 ? 'Captain' : 'First Officer'} Ergonomic Pilot Seat`,
+        category: 'cockpit',
+        object: sGrp,
+        explodedOffset: new THREE.Vector3(side * 3.5, 3.2, 5.2),
+        specs: { material: 'Sheepskin / Magnesium Rail Frame', massKg: 34, description: 'Fully motorized 6-axis flight crew seat with 5-point inertial harness.' }
+      });
+    }
+
+    // 67-68. Captain & First Officer Control Yokes & Rudder Pedals
+    for (const side of [1, -1]) {
+      const yGrp = new THREE.Group();
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.65, 12), MATS.darkMetal);
+      const horn = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.032, 8, 18, Math.PI * 1.25), MATS.darkMetal);
+      horn.position.set(0, 0.34, 0);
+      horn.rotation.z = Math.PI * 0.88;
+      const pedal = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.12), MATS.chrome);
+      pedal.position.set(0, -0.25, 0.28);
+      yGrp.add(col, horn, pedal);
+      yGrp.position.set(side * 0.72, 0.08, 24.25);
+      registerPart({
+        name: `${side > 0 ? 'Captain' : 'First Officer'} Control Column & Pedals`,
+        category: 'cockpit',
+        object: yGrp,
+        explodedOffset: new THREE.Vector3(side * 3.5, 1.8, 6.8),
+        specs: { material: 'Cast Aluminum / Fly-By-Wire Transducers', massKg: 19, description: 'Dual-linked pitch/roll control column and toe-brake rudder pedal assembly.' }
+      });
+    }
+
+    // =========================================================================
+    // 8. BUILD SUBSYSTEM 4: CABIN INTERIORS, GALLEYS & CARGO ULDs (61 PARTS)
+    // =========================================================================
+    // 69-70. Forward Entry Galley & Lavatory Pair
+    {
+      const g = new THREE.Mesh(new THREE.BoxGeometry(1.75, 1.95, 1.4), MATS.galleySteel);
+      g.position.set(-1.35, 0.68, 21.1);
+      registerPart({
+        name: 'Forward Entry Galley Complex',
+        category: 'cabin',
+        object: g,
+        explodedOffset: new THREE.Vector3(-4.5, 4.5, 5.2),
+        specs: { material: 'Stainless Steel / Honeycomb Composite', massKg: 310, description: 'Forward business-class meal cart stowage, convection ovens, and espresso station.' }
+      });
+
+      const lav = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.95, 1.35), MATS.overheadBin);
+      lav.position.set(1.45, 0.68, 21.1);
+      registerPart({
+        name: 'Forward Lavatory Monument',
+        category: 'cabin',
+        object: lav,
+        explodedOffset: new THREE.Vector3(4.5, 4.5, 5.2),
+        specs: { material: 'Vacuum-Formed Composite Monument', massKg: 185, description: 'Forward cabin vacuum lavatory unit with PRM-accessible folding wall.' }
+      });
+    }
+
+    // 71-82. 12 Business Class Lie-Flat Suite Pods (3 Rows × 4 Suites)
+    const bizRowsZ = [18.4, 15.6, 12.8];
+    const bizCols = [
+      { code: 'A', x: 1.98,  yaw: -0.22 },
+      { code: 'D', x: 0.64,  yaw: 0.14 },
+      { code: 'G', x: -0.64, yaw: -0.14 },
+      { code: 'K', x: -1.98, yaw: 0.22 }
+    ];
+    bizRowsZ.forEach((z, rIdx) => {
+      bizCols.forEach(col => {
+        const suite = new THREE.Group();
+        const shell = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1.15, 1.85), MATS.bizShell);
+        shell.position.set(0, 0.58, 0);
+        const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.22, 1.32), MATS.bizLeather);
+        cushion.position.set(0, 0.34, 0.1);
+        const backrest = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.82, 0.18), MATS.bizLeather);
+        backrest.position.set(0, 0.72, -0.52);
+        backrest.rotation.x = -0.26;
+        const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.30, 0.04), MATS.avionicsScreen);
+        monitor.position.set(0, 0.84, 0.88);
+        suite.add(shell, cushion, backrest, monitor);
+        suite.position.set(col.x, -0.30, z);
+        suite.rotation.y = col.yaw;
+
+        registerPart({
+          name: `Business Class Lie-Flat Suite ${rIdx + 1}${col.code}`,
+          category: 'cabin',
+          object: suite,
+          explodedOffset: new THREE.Vector3(col.x * 2.2, 5.2 + (rIdx % 2) * 1.4, (z - 15) * 0.6),
+          specs: { material: 'Carbon Shell / Full-Grain Leather', massKg: 94, description: '79-inch full lie-flat business suite with privacy door, console, and 18-inch 4K IFE monitor.' }
+        });
+      });
+    });
+
+    // 83-84. Mid-Cabin Galley & Lavatory Pair
+    {
+      const mg = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.95, 1.55), MATS.galleySteel);
+      mg.position.set(0, 0.68, 10.6);
+      registerPart({
+        name: 'Mid-Cabin Galley & Bar Counter',
+        category: 'cabin',
+        object: mg,
+        explodedOffset: new THREE.Vector3(0, 6.2, 2.5),
+        specs: { material: 'Brushed Stainless / Corian Top', massKg: 360, description: 'Center-aisle passenger refreshment bar and mid-cabin service galley.' }
+      });
+
+      const ml = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.95, 1.2), MATS.overheadBin);
+      ml.position.set(-1.55, 0.68, 9.2);
+      registerPart({
+        name: 'Mid-Cabin Twin Lavatory Module',
+        category: 'cabin',
+        object: ml,
+        explodedOffset: new THREE.Vector3(-4.8, 5.5, 1.8),
+        specs: { material: 'Composite Partition / Vacuum Plumbing', massKg: 210, description: 'Mid-cabin dual lavatory block separating Business and Economy cabins.' }
+      });
+    }
+
+    // 85-111. 27 Economy Class Triple-Seat Row Banks (9 Rows × 3 Banks)
+    const econBankConfigs = [
+      { label: 'Port (ABC)',      x: 2.02 },
+      { label: 'Center (DEF)',    x: 0.0 },
+      { label: 'Starboard (GHK)', x: -2.02 }
+    ];
+    for (let r = 0; r < 9; r++) {
+      const z = 7.4 - r * 2.25;
+      econBankConfigs.forEach(bank => {
+        const bGrp = new THREE.Group();
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.10, 0.14), MATS.aluFrame);
+        beam.position.set(0, 0.24, -0.08);
+        bGrp.add(beam);
+        for (let s = -1; s <= 1; s++) {
+          const sx = s * 0.44;
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.26, 0.36), MATS.darkMetal);
+          leg.position.set(sx, 0.13, 0);
+          const seatPan = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.11, 0.46), MATS.econFabric);
+          seatPan.position.set(sx, 0.30, 0.04);
+          const seatBack = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.72, 0.10), MATS.econFabric);
+          seatBack.position.set(sx, 0.66, -0.18);
+          seatBack.rotation.x = -0.15;
+          const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.16, 0.11), MATS.econHeadrest);
+          head.position.set(sx, 1.02, -0.24);
+          bGrp.add(leg, seatPan, seatBack, head);
+        }
+        bGrp.position.set(bank.x, -0.30, z);
+        registerPart({
+          name: `Economy Seat Bank Row ${r + 4} ${bank.label}`,
+          category: 'cabin',
+          object: bGrp,
+          explodedOffset: new THREE.Vector3(bank.x * 2.1, 4.2 + (r % 2) * 1.1, (z - 1) * 0.45),
+          specs: { material: 'Lightweight Alloy Frame / Flame-Retardant Textile', massKg: 38, description: '16g-certified triple economy passenger seat unit with reclining backs and IFE screens.' }
+        });
+      });
+    }
+
+    // 112-114. Aft Galleys (Port/Starboard) & Aft Lavatory Complex
+    {
+      const agL = new THREE.Mesh(new THREE.BoxGeometry(1.45, 1.92, 1.5), MATS.galleySteel);
+      agL.position.set(1.5, 0.66, -15.6);
+      registerPart({
+        name: 'Aft Galley Complex (Port)',
+        category: 'cabin',
+        object: agL,
+        explodedOffset: new THREE.Vector3(4.5, 4.5, -5.8),
+        specs: { material: 'Stainless Steel / Insulated Trolley Bays', massKg: 295, description: 'Port-side aft main meal trolley galley.' }
+      });
+
+      const agR = new THREE.Mesh(new THREE.BoxGeometry(1.45, 1.92, 1.5), MATS.galleySteel);
+      agR.position.set(-1.5, 0.66, -15.6);
+      registerPart({
+        name: 'Aft Galley Complex (Starboard)',
+        category: 'cabin',
+        object: agR,
+        explodedOffset: new THREE.Vector3(-4.5, 4.5, -5.8),
+        specs: { material: 'Stainless Steel / Beverage Carts', massKg: 295, description: 'Starboard-side aft main meal trolley galley.' }
+      });
+
+      const al = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.88, 1.3), MATS.overheadBin);
+      al.position.set(0, 0.66, -17.3);
+      registerPart({
+        name: 'Aft Lavatory Complex',
+        category: 'cabin',
+        object: al,
+        explodedOffset: new THREE.Vector3(0, 5.2, -7.2),
+        specs: { material: 'Composite Acoustic Enclosure', massKg: 260, description: 'Aft cabin triple-lavatory complex mounted against the aft pressure bulkhead.' }
+      });
+    }
+
+    // 115-120. 6 Overhead Stowage Bin Modules
+    const binConfigs = [
+      { name: 'Overhead Bins Fwd (Port)',      x: 2.15,  z: 10.5, len: 15.5, cut: 'hide', expX: 5.5 },
+      { name: 'Overhead Bins Fwd (Starboard)', x: -2.15, z: 10.5, len: 15.5, cut: 'keep', expX: -5.5 },
+      { name: 'Overhead Bins Center (Fwd)',    x: 0.0,   z: 10.5, len: 15.5, cut: 'keep', expX: 0 },
+      { name: 'Overhead Bins Aft (Port)',      x: 2.15,  z: -6.2, len: 15.5, cut: 'hide', expX: 5.5 },
+      { name: 'Overhead Bins Aft (Starboard)', x: -2.15, z: -6.2, len: 15.5, cut: 'keep', expX: -5.5 },
+      { name: 'Overhead Bins Center (Aft)',    x: 0.0,   z: -6.2, len: 15.5, cut: 'keep', expX: 0 }
+    ];
+    binConfigs.forEach(bc => {
+      const bin = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.56, bc.len), MATS.overheadBin);
+      bin.position.set(bc.x, 1.98, bc.z);
+      registerPart({
+        name: bc.name,
+        category: 'cabin',
+        object: bin,
+        explodedOffset: new THREE.Vector3(bc.expX, 8.2, bc.z * 0.2),
+        cutawayAction: bc.cut,
+        specs: { material: 'Nomex Core / Gas-Spring Latches', massKg: 210, description: 'Pivot-type overhead carry-on luggage stowage module with LED mood lighting strip.' }
+      });
+    });
+
+    // 121-125. 5 Forward LD3 Contoured Cargo Containers
+    for (let i = 0; i < 5; i++) {
+      const z = 18.2 - i * 2.55;
+      const uld = new THREE.Group();
+      const box = new THREE.Mesh(new THREE.BoxGeometry(2.65, 1.38, 1.95), MATS.uldAlu);
+      const band = new THREE.Mesh(new THREE.BoxGeometry(2.70, 0.14, 1.98), MATS.ecsBlue);
+      band.position.y = 0.25;
+      uld.add(box, band);
+      uld.position.set(0, -1.48, z);
+      registerPart({
+        name: `Fwd LD3 Cargo Container #${i + 1}`,
+        category: 'cabin',
+        object: uld,
+        explodedOffset: new THREE.Vector3((i % 2 === 0 ? 3.5 : -3.5), -8.2, (z - 12) * 0.45),
+        specs: { material: '5052 Aluminum / Polycarbonate Door', massKg: 1580, description: 'Standard AKE/LD3 contoured lower-deck baggage and air-freight ULD container.' }
+      });
+    }
+
+    // 126-129. 4 Aft Cargo ULD Pallets
+    for (let i = 0; i < 4; i++) {
+      const z = -6.2 - i * 2.75;
+      const pal = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.75, 0.12, 2.2), MATS.aluFrame);
+      const load = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.25, 1.95), MATS.uldAlu);
+      load.position.y = 0.68;
+      pal.add(base, load);
+      pal.position.set(0, -2.14, z);
+      registerPart({
+        name: `Aft Cargo ULD Pallet #${i + 1}`,
+        category: 'cabin',
+        object: pal,
+        explodedOffset: new THREE.Vector3((i % 2 === 0 ? -3.5 : 3.5), -8.2, (z + 8) * 0.45),
+        specs: { material: '7075 Alloy Pallet / Fire-Retardant Cargo Net', massKg: 2150, description: 'PMC 96×125-inch main-freight lower-deck palletized cargo unit.' }
+      });
+    }
+
+    // =========================================================================
+    // 9. BUILD SUBSYSTEM 5: WINGS, CONTROL SURFACES & FUEL TANKS (33 PARTS)
+    // =========================================================================
+    // 130-133. Upper & Lower Airfoil Skins (Port & Starboard)
+    for (const side of [1, -1]) {
+      const sLabel = side > 0 ? 'Port' : 'Starboard';
+      const upperMesh = new THREE.Mesh(createWingSkinGeometry({ side, isUpper: true }), MATS.wingSkin);
+      registerPart({
+        name: `${sLabel} Wing Upper Airfoil Skin`,
+        category: 'wings',
+        object: upperMesh,
+        explodedOffset: new THREE.Vector3(side * 10.5, 6.2, 0),
+        cutawayAction: side > 0 ? 'hide' : 'keep',
+        isOuterShell: true,
+        specs: { material: 'Monolithic CFRP Upper Wing Cover', massKg: 1620, description: 'Supercritical swept carbon-composite upper wing skin with integral stringers.' }
+      });
+
+      const lowerMesh = new THREE.Mesh(createWingSkinGeometry({ side, isUpper: false }), MATS.wingSkin);
+      registerPart({
+        name: `${sLabel} Wing Lower Airfoil Skin`,
+        category: 'wings',
+        object: lowerMesh,
+        explodedOffset: new THREE.Vector3(side * 10.5, -5.2, 0),
+        isOuterShell: true,
+        specs: { material: 'CFRP Damage-Tolerant Lower Cover', massKg: 1480, description: 'Lower wing torsion-box panel with fuel access manholes.' }
+      });
+    }
+
+    // 134-135. Blended Sharklet Winglets + Nav Lights
+    for (const side of [1, -1]) {
+      const secTip = getWingSection(29.5);
+      const wGrp = new THREE.Group();
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(0, secTip.chord);
+      shape.lineTo(-2.6, secTip.chord * 0.45);
+      shape.lineTo(-2.8, 0.15);
+      shape.closePath();
+      const geom = new THREE.ExtrudeGeometry(shape, { depth: 0.14, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04 });
+      const blade = new THREE.Mesh(geom, MATS.tailLivery);
+      blade.rotation.y = Math.PI / 2;
+      blade.rotation.x = -Math.PI / 2;
+      blade.rotation.z = side * 0.36;
+      wGrp.add(blade);
+
+      // Wingtip navigation beacon (Green = Starboard -X? Wait: aviation convention: Port = Red, Starboard = Green!)
+      const navMat = new THREE.MeshBasicMaterial({ color: side > 0 ? 0xef4444 : 0x22c55e });
+      const navBulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), navMat);
+      navBulb.position.set(side * 0.15, 0.1, 2.5);
+      wGrp.add(navBulb);
+      navLights.push({ mesh: navBulb, baseColor: side > 0 ? 0xef4444 : 0x22c55e, phase: side > 0 ? 0 : Math.PI });
+
+      wGrp.position.set(side * 29.5, secTip.yCenter, secTip.zTE);
+      registerPart({
+        name: `${side > 0 ? 'Port' : 'Starboard'} Blended Sharklet Winglet`,
+        category: 'wings',
+        object: wGrp,
+        explodedOffset: new THREE.Vector3(side * 18.5, 4.0, -3.5),
+        specs: { material: 'CFRP Scimitar Wingtip Device', massKg: 165, description: 'Blended upward-swept sharklet reducing induced wingtip vortex drag by 4%.' }
+      });
+    }
+
+    // 136-141. 6 Leading-Edge Slats (3 per wing)
+    const slatSpans = [
+      { label: 'Inboard',  x0: 4.5,  x1: 9.8 },
+      { label: 'Mid',      x0: 11.4, x1: 19.2 },
+      { label: 'Outboard', x0: 19.6, x1: 27.6 }
+    ];
+    for (const side of [1, -1]) {
+      slatSpans.forEach(sp => {
+        const s0 = getWingSection(sp.x0);
+        const s1 = getWingSection(sp.x1);
+        const p0 = new THREE.Vector3(side * sp.x0, s0.yCenter, s0.zLE + 0.16);
+        const p1 = new THREE.Vector3(side * sp.x1, s1.yCenter, s1.zLE + 0.16);
+        const len = p0.distanceTo(p1);
+        const slat = new THREE.Mesh(
+          new THREE.BoxGeometry(len, (s0.thickness + s1.thickness) * 0.24, 0.58),
+          MATS.controlSurface
+        );
+        slat.position.copy(p0).lerp(p1, 0.5);
+        slat.lookAt(p1);
+        slat.rotateY(Math.PI / 2);
+        registerPart({
+          name: `${side > 0 ? 'Port' : 'Starboard'} ${sp.label} Leading-Edge Slat`,
+          category: 'wings',
+          object: slat,
+          explodedOffset: new THREE.Vector3(side * 12, 0.5, 5.5),
+          specs: { material: 'Anti-Iced Titanium Leading Edge', massKg: 95, description: 'Pneumatically bleed-air heated extendable Krueger/slat high-lift device.' }
+        });
+      });
+    }
+
+    // 142-145. 4 Trailing-Edge Fowler Flaps (Inboard & Outboard per wing)
+    const flapSpans = [
+      { label: 'Inboard',  x0: 3.4,  x1: 10.2 },
+      { label: 'Outboard', x0: 11.0, x1: 20.8 }
+    ];
+    for (const side of [1, -1]) {
+      flapSpans.forEach(fp => {
+        const s0 = getWingSection(fp.x0);
+        const s1 = getWingSection(fp.x1);
+        const p0 = new THREE.Vector3(side * fp.x0, s0.yCenter - 0.08, s0.zTE - 0.25);
+        const p1 = new THREE.Vector3(side * fp.x1, s1.yCenter - 0.08, s1.zTE - 0.25);
+        const len = p0.distanceTo(p1);
+        const flap = new THREE.Mesh(
+          new THREE.BoxGeometry(len, 0.22, 1.35),
+          MATS.controlSurface
+        );
+        flap.position.copy(p0).lerp(p1, 0.5);
+        flap.lookAt(p1);
+        flap.rotateY(Math.PI / 2);
+        registerPart({
+          name: `${side > 0 ? 'Port' : 'Starboard'} ${fp.label} Fowler Flap`,
+          category: 'wings',
+          object: flap,
+          explodedOffset: new THREE.Vector3(side * 11.5, -0.5, -5.8),
+          specs: { material: 'CFRP / Honeycomb Single-Slotted Flap', massKg: 190, description: 'Track-mounted high-lift trailing-edge Fowler flap increasing wing area and camber during approach.' }
+        });
+      });
+    }
+
+    // 146-153. 8 Flap Track Fairing Canoes (4 per wing)
+    const canoeXs = [6.4, 11.2, 16.0, 20.6];
+    for (const side of [1, -1]) {
+      canoeXs.forEach((absX, idx) => {
+        const sec = getWingSection(absX);
+        const canoe = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.20 - idx * 0.02, 2.2 - idx * 0.18, 6, 12),
+          MATS.radomeWhite
+        );
+        canoe.rotation.x = Math.PI / 2;
+        canoe.position.set(side * absX, sec.yCenter - 0.38, sec.zTE + 0.15);
+        registerPart({
+          name: `${side > 0 ? 'Port' : 'Starboard'} Flap Track Fairing #${idx + 1}`,
+          category: 'wings',
+          object: canoe,
+          explodedOffset: new THREE.Vector3(side * 12, -3.8, -3.0),
+          specs: { material: 'Fiberglass Aerodynamic Fairing', massKg: 36, description: 'Underwing streamlined canoe housing flap carriage tracks and hydraulic jackscrews.' }
+        });
+      });
+    }
+
+    // 154-155. 2 Outboard Roll Ailerons
+    for (const side of [1, -1]) {
+      const s0 = getWingSection(21.2);
+      const s1 = getWingSection(28.2);
+      const p0 = new THREE.Vector3(side * 21.2, s0.yCenter, s0.zTE - 0.1);
+      const p1 = new THREE.Vector3(side * 28.2, s1.yCenter, s1.zTE - 0.1);
+      const ail = new THREE.Mesh(new THREE.BoxGeometry(p0.distanceTo(p1), 0.16, 0.92), MATS.controlSurface);
+      ail.position.copy(p0).lerp(p1, 0.5);
+      ail.lookAt(p1);
+      ail.rotateY(Math.PI / 2);
+      registerPart({
+        name: `${side > 0 ? 'Port' : 'Starboard'} Outboard Roll Aileron`,
+        category: 'wings',
+        object: ail,
+        explodedOffset: new THREE.Vector3(side * 16.5, 0.5, -5.2),
+        specs: { material: 'CFRP / Dual Electro-Hydrostatic Actuators', massKg: 78, description: 'Outboard primary roll-axis flight control surface with load-alleviation capability.' }
+      });
+    }
+
+    // 156-157. 2 Lift-Dump Spoiler Arrays (6 panels each)
+    for (const side of [1, -1]) {
+      const spGrp = new THREE.Group();
+      for (let i = 0; i < 6; i++) {
+        const absX = 5.2 + i * 2.55;
+        const sec = getWingSection(absX);
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.08, 0.85), MATS.controlSurface);
+        panel.position.set(side * absX, sec.yCenter + sec.thickness * 0.35, sec.zTE + 1.45);
+        panel.rotation.y = side * 0.25;
+        spGrp.add(panel);
+      }
+      registerPart({
+        name: `${side > 0 ? 'Port' : 'Starboard'} Lift-Dump Spoiler Array (6 Panels)`,
+        category: 'wings',
+        object: spGrp,
+        explodedOffset: new THREE.Vector3(side * 12, 4.2, -2.5),
+        specs: { material: 'Carbon Composite Speedbrake Panels', massKg: 145, description: 'Six upper-wing spoiler panels acting as airbrakes, roll assist, and ground lift-dumpers.' }
+      });
+    }
+
+    // 158-162. 5 Internal Fuel Tank Bladders (Center + 2 Port + 2 Starboard)
+    {
+      const cTank = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.85, 5.2), MATS.fuelBladder);
+      cTank.position.set(0, -1.2, 0.4);
+      registerPart({
+        name: 'Center Wing Box Fuel Tank',
+        category: 'wings',
+        object: cTank,
+        explodedOffset: new THREE.Vector3(0, -0.8, 0),
+        specs: { material: 'Integral Sealant Tank (Jet A-1, 68,000 L)', massKg: 420, description: 'Central fuel cell inside the fuselage carry-through wing box for long-haul range.' }
+      });
+
+      for (const side of [1, -1]) {
+        const sLabel = side > 0 ? 'Port' : 'Starboard';
+        const innerSec = getWingSection(7.5);
+        const innerTank = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.52, 2.5), MATS.fuelBladder);
+        innerTank.position.set(side * 7.6, innerSec.yCenter, innerSec.zLE - innerSec.chord * 0.44);
+        innerTank.rotation.y = side * 0.24;
+        innerTank.rotation.z = side * 0.08;
+        registerPart({
+          name: `${sLabel} Inner Main Fuel Tank`,
+          category: 'wings',
+          object: innerTank,
+          explodedOffset: new THREE.Vector3(side * 10.5, 2.2, 0.5),
+          specs: { material: 'Baffled Integral Wing Tank (32,000 L)', massKg: 260, description: 'Primary inboard wing fuel tank feeding the engine fuel manifold.' }
+        });
+
+        const outerSec = getWingSection(17.5);
+        const outerTank = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.30, 1.35), MATS.fuelBladder);
+        outerTank.position.set(side * 17.5, outerSec.yCenter, outerSec.zLE - outerSec.chord * 0.44);
+        outerTank.rotation.y = side * 0.52;
+        outerTank.rotation.z = side * 0.10;
+        registerPart({
+          name: `${sLabel} Outer Surge Fuel Tank`,
+          category: 'wings',
+          object: outerTank,
+          explodedOffset: new THREE.Vector3(side * 14.5, 2.2, -1.5),
+          specs: { material: 'Integral Wingtip Reserve & Vent Tank', massKg: 140, description: 'Outboard wing fuel cell providing bending-moment relief during cruise.' }
+        });
+      }
+    }
+
+    // =========================================================================
+    // 10. BUILD SUBSYSTEM 6: TWIN HIGH-BYPASS TURBOFAN ENGINES (18 PARTS)
+    // =========================================================================
+    for (const side of [1, -1]) {
+      const engNum = side > 0 ? '#1 Port' : '#2 Starboard';
+      const ex = side * 10.2;
+      const ey = -2.25;
+      const ez = 2.8;
+
+      // 1. Engine Pylon & Firewall Strut
+      const pylon = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.35, 3.8), MATS.titanium);
+      pylon.position.set(ex, ey + 1.25, ez - 0.6);
+      registerPart({
+        name: `Engine ${engNum} Pylon & Firewall Strut`,
+        category: 'engines',
+        object: pylon,
+        explodedOffset: new THREE.Vector3(side * 8.5, -1.5, 0.5),
+        specs: { material: 'Ti-6Al-4V / Inconel Firebox', massKg: 420, description: 'Aerodynamic structural pylon suspending the turbofan under the wing front spar.' }
+      });
+
+      // 2. Nacelle Acoustic Intake Lip Ring
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(1.52, 0.22, 16, 36), MATS.chrome);
+      lip.position.set(ex, ey, ez + 2.35);
+      registerPart({
+        name: `Engine ${engNum} Acoustic Intake Lip Ring`,
+        category: 'engines',
+        object: lip,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, 7.2),
+        isOuterShell: true,
+        specs: { material: 'Polished Aluminum Anti-Ice Lip', massKg: 140, description: 'Laminar-flow bleed-air heated inlet lip guiding airflow into the 118-inch fan.' }
+      });
+
+      // 3. Outer Nacelle Cowl — Outboard Half (Cutaway hides Port outboard cowl!)
+      const cowlOut = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.66, 1.54, 4.1, 24, 1, true, side > 0 ? 0 : Math.PI, Math.PI),
+        MATS.radomeWhite
+      );
+      cowlOut.rotation.x = Math.PI / 2;
+      cowlOut.position.set(ex, ey, ez + 0.3);
+      registerPart({
+        name: `Engine ${engNum} Outer Nacelle Cowl (Outboard)`,
+        category: 'engines',
+        object: cowlOut,
+        explodedOffset: new THREE.Vector3(side * 12.5, -3.5, 1.5),
+        cutawayAction: side > 0 ? 'hide' : 'keep',
+        isOuterShell: true,
+        specs: { material: 'CFRP Acoustic Thrust Reverser Cowl', massKg: 290, description: 'Outboard hinged fan cowl door with acoustic attenuation honeycomb liner.' }
+      });
+
+      // 4. Outer Nacelle Cowl — Inboard Half
+      const cowlIn = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.66, 1.54, 4.1, 24, 1, true, side > 0 ? Math.PI : 0, Math.PI),
+        MATS.radomeWhite
+      );
+      cowlIn.rotation.x = Math.PI / 2;
+      cowlIn.position.set(ex, ey, ez + 0.3);
+      registerPart({
+        name: `Engine ${engNum} Outer Nacelle Cowl (Inboard)`,
+        category: 'engines',
+        object: cowlIn,
+        explodedOffset: new THREE.Vector3(side * 5.0, -3.5, 1.5),
+        isOuterShell: true,
+        specs: { material: 'CFRP Acoustic Fan Cowl', massKg: 290, description: 'Inboard nacelle fan duct housing cascade thrust reverser sleeves.' }
+      });
+
+      // 5. Conical Spinner with Spiral Mark
+      const spinner = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.95, 24), MATS.spinnerMat);
+      spinner.rotation.x = Math.PI / 2;
+      spinner.position.set(ex, ey, ez + 2.05);
+      registerPart({
+        name: `Engine ${engNum} Conical Fan Spinner`,
+        category: 'engines',
+        object: spinner,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, 10.2),
+        specs: { material: 'Elastomeric Ice-Shedding Composite', massKg: 28, description: 'Conical nose cone with high-visibility white safety spiral indicator.' }
+      });
+      animatedFanRotors.push({ obj: spinner, speed: 5.5 * side });
+
+      // 6. Wide-Chord Titanium/Carbon Fan Rotor (22 Blades)
+      const fanGrp = new THREE.Group();
+      const fanHub = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.52, 0.45, 24), MATS.titanium);
+      fanHub.rotation.x = Math.PI / 2;
+      fanGrp.add(fanHub);
+      for (let b = 0; b < 22; b++) {
+        const ang = (b / 22) * Math.PI * 2;
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.98, 0.34), MATS.carbonBlade);
+        blade.position.set(Math.cos(ang) * 0.94, Math.sin(ang) * 0.94, 0);
+        blade.rotation.z = ang + Math.PI / 2;
+        blade.rotation.y = 0.42;
+        fanGrp.add(blade);
+      }
+      fanGrp.position.set(ex, ey, ez + 1.55);
+      registerPart({
+        name: `Engine ${engNum} Wide-Chord Fan Rotor (22 Blades)`,
+        category: 'engines',
+        object: fanGrp,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, 5.2),
+        specs: { material: '3D-Woven Carbon Fiber / Titanium Leading Edge', massKg: 540, description: '9.6:1 high-bypass 22-blade front turbofan rotor generating 84,000 lbf thrust.' }
+      });
+      animatedFanRotors.push({ obj: fanGrp, speed: 5.5 * side });
+
+      // 7. 8-Stage High-Pressure Compressor Drum
+      const compGrp = new THREE.Group();
+      for (let st = 0; st < 8; st++) {
+        const r = 0.72 - st * 0.032;
+        const disk = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.14, 24), st % 2 ? MATS.titanium : MATS.chrome);
+        disk.rotation.x = Math.PI / 2;
+        disk.position.z = 0.7 - st * 0.2;
+        compGrp.add(disk);
+      }
+      compGrp.position.set(ex, ey, ez + 0.35);
+      registerPart({
+        name: `Engine ${engNum} 8-Stage HP Compressor`,
+        category: 'engines',
+        object: compGrp,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, 1.2),
+        specs: { material: 'Ti-Aluminide & Inconel Blisks', massKg: 610, description: 'Multi-stage axial compressor raising core airflow pressure ratio to 50:1.' }
+      });
+
+      // 8. Annular Combustor Chamber
+      const comb = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.62, 0.72, 24), MATS.combustorGlow);
+      comb.rotation.x = Math.PI / 2;
+      comb.position.set(ex, ey, ez - 0.65);
+      registerPart({
+        name: `Engine ${engNum} Annular Combustor`,
+        category: 'engines',
+        object: comb,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, -2.5),
+        specs: { material: 'Ceramic Matrix Composite (CMC) Liner', massKg: 310, description: 'Low-NOx twin-annular lean-burn combustor operating at 1,650 °C turbine entry temp.' }
+      });
+
+      // 9. Low-Pressure Turbine & Acoustic Chevron Nozzle
+      const turbGrp = new THREE.Group();
+      const coreNoz = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.42, 1.65, 24), MATS.titanium);
+      coreNoz.rotation.x = Math.PI / 2;
+      const plug = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.15, 20), MATS.darkMetal);
+      plug.rotation.x = -Math.PI / 2;
+      plug.position.z = -1.0;
+      turbGrp.add(coreNoz, plug);
+      turbGrp.position.set(ex, ey, ez - 1.75);
+      registerPart({
+        name: `Engine ${engNum} LPT & Exhaust Nozzle`,
+        category: 'engines',
+        object: turbGrp,
+        explodedOffset: new THREE.Vector3(side * 8.5, -3.5, -6.5),
+        specs: { material: 'Single-Crystal Nickel Superalloy', massKg: 720, description: '6-stage low-pressure turbine and serrated acoustic chevron exhaust nozzle.' }
+      });
+    }
+
+    // =========================================================================
+    // 11. BUILD SUBSYSTEM 7: TAIL EMPENNAGE & APU (7 PARTS)
+    // =========================================================================
+    // 163. Vertical Stabilizer Main Swept Fin
+    {
+      const vShape = new THREE.Shape();
+      vShape.moveTo(0, 0);
+      vShape.lineTo(6.4, 0);
+      vShape.lineTo(1.8, 8.6);
+      vShape.lineTo(-1.2, 8.6);
+      vShape.closePath();
+      const vGeom = new THREE.ExtrudeGeometry(vShape, { depth: 0.48, bevelEnabled: true, bevelSize: 0.08, bevelThickness: 0.08 });
+      const vMesh = new THREE.Mesh(vGeom, MATS.tailLivery);
+      vMesh.rotation.y = -Math.PI / 2;
+      vMesh.position.set(0.24, 2.55, -28.0);
+      registerPart({
+        name: 'Vertical Stabilizer Main Swept Fin',
+        category: 'empennage',
+        object: vMesh,
+        explodedOffset: new THREE.Vector3(0, 9.5, -8.5),
+        specs: { material: 'CFRP Multi-Spar Torque Box', massKg: 890, description: 'Swept vertical tail fin providing directional yaw stability and airline livery emblem.' }
+      });
+    }
+
+    // 164. Directional Rudder Control Surface
+    {
+      const rShape = new THREE.Shape();
+      rShape.moveTo(0, 0);
+      rShape.lineTo(1.55, 0);
+      rShape.lineTo(-1.1, 8.2);
+      rShape.lineTo(-2.2, 8.2);
+      rShape.closePath();
+      const rGeom = new THREE.ExtrudeGeometry(rShape, { depth: 0.24, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04 });
+      const rMesh = new THREE.Mesh(rGeom, MATS.controlSurface);
+      rMesh.rotation.y = -Math.PI / 2;
+      rMesh.position.set(0.12, 2.75, -29.65);
+      registerPart({
+        name: 'Directional Rudder Control Surface',
+        category: 'empennage',
+        object: rMesh,
+        explodedOffset: new THREE.Vector3(0, 9.5, -14.5),
+        specs: { material: 'CFRP / Three Independent Hydraulic Actuators', massKg: 215, description: 'Full-span hinged rudder governing yaw authority and engine-out trim.' }
+      });
+    }
+
+    // 165-168. Horizontal Stabilizers & Elevators (Port & Starboard)
+    for (const side of [1, -1]) {
+      const sLabel = side > 0 ? 'Port' : 'Starboard';
+      const hShape = new THREE.Shape();
+      hShape.moveTo(0, 0);
+      hShape.lineTo(0, 3.2);
+      hShape.lineTo(9.4, -2.5);
+      hShape.lineTo(9.4, -4.1);
+      hShape.closePath();
+      const hGeom = new THREE.ExtrudeGeometry(hShape, { depth: 0.26, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05 });
+      const hMesh = new THREE.Mesh(hGeom, MATS.wingSkin);
+      hMesh.rotation.x = Math.PI / 2;
+      if (side < 0) hMesh.scale.x = -1;
+      hMesh.rotation.z = side * 0.06;
+      hMesh.position.set(side * 0.8, 1.35, -27.2);
+      registerPart({
+        name: `${sLabel} Horizontal Stabilizer Tailplane`,
+        category: 'empennage',
+        object: hMesh,
+        explodedOffset: new THREE.Vector3(side * 9.5, 2.5, -10.5),
+        specs: { material: 'Trimmable CFRP Tailplane (THS)', massKg: 430, description: 'Jackscrew-trimmable horizontal stabilizer providing pitch balance across CG envelope.' }
+      });
+
+      const elv = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.14, 0.95), MATS.controlSurface);
+      elv.position.set(side * 5.4, 1.58, -28.95);
+      elv.rotation.y = side * 0.56;
+      registerPart({
+        name: `${sLabel} Pitch Elevator Surface`,
+        category: 'empennage',
+        object: elv,
+        explodedOffset: new THREE.Vector3(side * 9.5, 2.5, -15.2),
+        specs: { material: 'CFRP / Dual Fly-By-Wire Actuators', massKg: 92, description: 'Hinged pitch control elevator mounted along the horizontal stabilizer trailing edge.' }
+      });
+    }
+
+    // 169. Auxiliary Power Unit (APU) Gas Turbine
+    {
+      const apuGrp = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 2.4, 18), MATS.titanium);
+      body.rotation.x = Math.PI / 2;
+      const gen = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 0.8), MATS.radarGold);
+      gen.position.set(0, 0.3, 0.5);
+      apuGrp.add(body, gen);
+      apuGrp.position.set(0, getFuselageCenterY(-27.8), -27.8);
+      registerPart({
+        name: 'Auxiliary Power Unit (APU) Gas Turbine',
+        category: 'empennage',
+        object: apuGrp,
+        explodedOffset: new THREE.Vector3(0, 1.0, -14.8),
+        specs: { material: 'Inconel Turbine / 90 kVA Generator', massKg: 235, description: 'Self-contained tailcone gas turbine providing electrical power and bleed air on the ground.' }
+      });
+    }
+
+    // =========================================================================
+    // 12. BUILD SUBSYSTEM 8: LANDING GEAR, HYDRAULICS & ECS (12 PARTS)
+    // =========================================================================
+    // 170-172. Nose Landing Gear Strut, Dual Wheel Assembly, Clamshell Doors
+    {
+      const strut = new THREE.Group();
+      const oleo = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 2.45, 16), MATS.chrome);
+      const drag = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.6, 10), MATS.aluFrame);
+      drag.position.set(0, 0.55, -0.55);
+      drag.rotation.x = 0.65;
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.14, 12), MATS.combustorGlow);
+      lamp.rotation.x = Math.PI / 2;
+      lamp.position.set(0, 0.1, 0.18);
+      strut.add(oleo, drag, lamp);
+      strut.position.set(0, -3.85, 22.8);
+      registerPart({
+        name: 'Nose Landing Gear Oleo Strut & Lights',
+        category: 'systems',
+        object: strut,
+        explodedOffset: new THREE.Vector3(0, -8.5, 5.5),
+        specs: { material: '300M Ultra-High-Strength Steel', massKg: 320, description: 'Steerable nitrogen-hydraulic nose gear shock strut with dual LED taxi/takeoff lamps.' }
+      });
+
+      const nwGrp = new THREE.Group();
+      const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.92, 12), MATS.chrome);
+      axle.rotation.z = Math.PI / 2;
+      nwGrp.add(axle);
+      for (const s of [-1, 1]) {
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.28, 22), MATS.rubber);
+        tire.rotation.z = Math.PI / 2;
+        tire.position.x = s * 0.34;
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.30, 16), MATS.aluFrame);
+        rim.rotation.z = Math.PI / 2;
+        rim.position.x = s * 0.34;
+        nwGrp.add(tire, rim);
+      }
+      nwGrp.position.set(0, -5.16, 22.8);
+      registerPart({
+        name: 'Nose Landing Gear Dual Wheel Assembly',
+        category: 'systems',
+        object: nwGrp,
+        explodedOffset: new THREE.Vector3(0, -11.5, 5.5),
+        specs: { material: 'Forged Aluminum Hubs / Nitrogen Bias Tires', massKg: 185, description: 'Twin 40×14-inch nose wheels with hydraulic nose-wheel steering collar.' }
+      });
+
+      const nDoors = new THREE.Group();
+      for (const s of [-1, 1]) {
+        const d = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 1.8), MATS.bellyBlue);
+        d.position.set(s * 0.56, 0, 0);
+        nDoors.add(d);
+      }
+      nDoors.position.set(0, -3.05, 22.2);
+      registerPart({
+        name: 'Nose Gear Bay Clamshell Doors',
+        category: 'systems',
+        object: nDoors,
+        explodedOffset: new THREE.Vector3(0, -6.5, 6.8),
+        specs: { material: 'CFRP / Aluminum Hinged Bay Doors', massKg: 65, description: 'Twin forward-retracting nose landing gear wheel-well fairing doors.' }
+      });
+    }
+
+    // 173-178. Port & Starboard Main Landing Gear (Strut, 4-Wheel Bogie, Doors)
+    for (const side of [1, -1]) {
+      const sLabel = side > 0 ? 'Port' : 'Starboard';
+      const mx = side * 4.45;
+      const mz = -1.65;
+
+      const mStrut = new THREE.Group();
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.17, 3.15, 16), MATS.chrome);
+      const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 2.3, 12), MATS.titanium);
+      brace.position.set(-side * 0.78, 0.72, 0);
+      brace.rotation.z = side * 0.62;
+      mStrut.add(post, brace);
+      mStrut.position.set(mx, -3.15, mz);
+      registerPart({
+        name: `${sLabel} Main Landing Gear Oleo Strut`,
+        category: 'systems',
+        object: mStrut,
+        explodedOffset: new THREE.Vector3(side * 6.5, -8.5, -0.5),
+        specs: { material: 'Ti-10V-2Fe-3Al Forged Titanium', massKg: 960, description: 'Primary main gear shock-absorbing oleo-pneumatic strut and folding side-stay.' }
+      });
+
+      const bogie = new THREE.Group();
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, 1.95), MATS.titanium);
+      bogie.add(beam);
+      for (const zOff of [-0.74, 0.74]) {
+        const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.25, 12), MATS.chrome);
+        ax.rotation.z = Math.PI / 2;
+        ax.position.z = zOff;
+        bogie.add(ax);
+        for (const xOff of [-0.46, 0.46]) {
+          const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.38, 24), MATS.rubber);
+          tire.rotation.z = Math.PI / 2;
+          tire.position.set(xOff, 0, zOff);
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.40, 16), MATS.aluFrame);
+          hub.rotation.z = Math.PI / 2;
+          hub.position.set(xOff, 0, zOff);
+          bogie.add(tire, hub);
+        }
+      }
+      bogie.position.set(mx, -4.96, mz);
+      registerPart({
+        name: `${sLabel} Main Gear 4-Wheel Bogie Truck`,
+        category: 'systems',
+        object: bogie,
+        explodedOffset: new THREE.Vector3(side * 6.5, -12.0, -0.5),
+        specs: { material: 'Carbon Multi-Disk Brakes / Radial Tires', massKg: 1120, description: 'Four-wheel dual-tandem main bogie truck rated for 280-tonne MTOW landings.' }
+      });
+
+      const mDoor = new THREE.Mesh(new THREE.BoxGeometry(0.10, 1.45, 2.35), MATS.bellyBlue);
+      mDoor.position.set(mx + side * 0.95, -2.55, mz);
+      registerPart({
+        name: `${sLabel} Main Gear Bay Door`,
+        category: 'systems',
+        object: mDoor,
+        explodedOffset: new THREE.Vector3(side * 9.5, -7.2, -0.5),
+        specs: { material: 'Carbon Epoxy Sandwich Door', massKg: 82, description: 'Hydraulically sequenced inboard-opening main wheel well door.' }
+      });
+    }
+
+    // 179-181. Environmental Control System (ECS Packs & Crown Distribution Duct)
+    for (const side of [1, -1]) {
+      const pack = new THREE.Group();
+      const unit = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.72, 1.95), MATS.ecsBlue);
+      const turbine = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.85, 16), MATS.chrome);
+      turbine.rotation.z = Math.PI / 2;
+      turbine.position.set(0, 0.15, 0.35);
+      pack.add(unit, turbine);
+      pack.position.set(side * 1.4, -2.05, 5.2);
+      registerPart({
+        name: `${side > 0 ? 'Port' : 'Starboard'} ECS Air Conditioning Pack`,
+        category: 'systems',
+        object: pack,
+        explodedOffset: new THREE.Vector3(side * 6.5, -7.2, 3.2),
+        specs: { material: 'Brazed Aluminum Heat Exchanger / ACM', massKg: 195, description: 'Air Cycle Machine conditioning engine bleed air for cabin pressurization and cooling.' }
+      });
+    }
+
+    {
+      const duct = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 37.5, 14), MATS.ecsBlue);
+      duct.rotation.x = Math.PI / 2;
+      duct.position.set(0, 2.52, 1.2);
+      registerPart({
+        name: 'Main Crown Cabin Air Distribution Manifold',
+        category: 'systems',
+        object: duct,
+        explodedOffset: new THREE.Vector3(0, 11.2, 0),
+        specs: { material: 'Kevlar-Composite Acoustic Ducting', massKg: 145, description: 'Overhead cabin air supply trunk feeding HEPA-filtered air down cabin sidewall risers.' }
+      });
+    }
+
+    // =========================================================================
+    // 13. LAY EVERY PART OUT — DETERMINISTIC NON-OVERLAPPING KNOLLING GRID
+    // =========================================================================
+    const LAYOUT_FLOOR_Y = -8.0;
+    let layoutFloorMesh = null;
+    let layoutBounds = { width: 140, depth: 80 };
+
+    function computeKnollingLayout() {
+      const MAX_DIM = 5.2;
+      const MIN_SCALE = 0.14;
+      const PAD = 1.6;
+      const ZONE_GAP = 4.2;
+
+      // Group parts by category and compute scaled cell bounds
+      const zones = {};
+      CATEGORY_ORDER.forEach(cat => {
+        const catParts = parts.filter(p => p.category === cat);
+        const items = catParts.map(p => {
+          const box = new THREE.Box3().setFromObject(p.object);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          const maxAxis = Math.max(size.x, size.y, size.z, 0.25);
+          const scale = Math.max(MIN_SCALE, Math.min(1.0, MAX_DIM / maxAxis));
+          p.layoutScale = scale;
+          return {
+            part: p,
+            w: Math.max(1.2, size.x * scale),
+            h: Math.max(0.5, size.y * scale),
+            d: Math.max(1.2, size.z * scale)
+          };
+        });
+
+        const cols = Math.max(3, Math.ceil(Math.sqrt(items.length * 1.4)));
+        const rows = Math.ceil(items.length / cols);
+
+        const colWidths = new Array(cols).fill(0);
+        const rowDepths = new Array(rows).fill(0);
+
+        items.forEach((it, idx) => {
+          const r = Math.floor(idx / cols);
+          const c = idx % cols;
+          colWidths[c] = Math.max(colWidths[c], it.w + PAD);
+          rowDepths[r] = Math.max(rowDepths[r], it.d + PAD);
+        });
+
+        const zoneW = colWidths.reduce((a, b) => a + b, 0) + 3.0;
+        const zoneD = rowDepths.reduce((a, b) => a + b, 0) + 5.5;
+        zones[cat] = { items, cols, rows, colWidths, rowDepths, zoneW, zoneD };
+      });
+
+      // Arrange 8 zones in a neat 4 columns x 2 rows macro blueprint grid
+      const macroCols = 4;
+      const macroColW = [0, 0, 0, 0];
+      const macroRowD = [0, 0];
+
+      CATEGORY_ORDER.forEach((cat, idx) => {
+        const mc = idx % macroCols;
+        const mr = Math.floor(idx / macroCols);
+        macroColW[mc] = Math.max(macroColW[mc], zones[cat].zoneW);
+        macroRowD[mr] = Math.max(macroRowD[mr], zones[cat].zoneD);
+      });
+
+      const totalW = macroColW.reduce((a, b) => a + b, 0) + ZONE_GAP * (macroCols - 1);
+      const totalD = macroRowD.reduce((a, b) => a + b, 0) + ZONE_GAP;
+
+      // Compute zone origins & each part's exact non-overlapping world layoutPos
+      const zoneRects = [];
+      let curZ = -totalD / 2;
+      for (let mr = 0; mr < 2; mr++) {
+        let curX = -totalW / 2;
+        for (let mc = 0; mc < macroCols; mc++) {
+          const cat = CATEGORY_ORDER[mr * macroCols + mc];
+          const zData = zones[cat];
+          const zX0 = curX;
+          const zZ0 = curZ;
+          zoneRects.push({
+            cat,
+            idx: mr * macroCols + mc + 1,
+            x: zX0,
+            z: zZ0,
+            w: macroColW[mc],
+            d: macroRowD[mr]
+          });
+
+          // Place items inside zone
+          const colOffsets = [];
+          let ax = zX0 + 1.5;
+          for (let c = 0; c < zData.cols; c++) {
+            colOffsets.push(ax + zData.colWidths[c] / 2);
+            ax += zData.colWidths[c];
+          }
+          const rowOffsets = [];
+          let az = zZ0 + 4.2;
+          for (let r = 0; r < zData.rows; r++) {
+            rowOffsets.push(az + zData.rowDepths[r] / 2);
+            az += zData.rowDepths[r];
+          }
+
+          zData.items.forEach((it, i) => {
+            const r = Math.floor(i / zData.cols);
+            const c = i % zData.cols;
+            it.part.layoutPos.set(
+              colOffsets[c],
+              LAYOUT_FLOOR_Y + it.h * 0.5 + 0.12,
+              rowOffsets[r]
+            );
+            it.part.layoutQuat.copy(it.part.assembledQuat);
+          });
+
+          curX += macroColW[mc] + ZONE_GAP;
+        }
+        curZ += macroRowD[mr] + ZONE_GAP;
+      }
+
+      // Build illuminated technical blueprint floor for Layout Mode
+      const padMargin = 8;
+      const floorW = totalW + padMargin * 2;
+      const floorD = totalD + padMargin * 2;
+      layoutBounds = { width: floorW, depth: floorD };
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#070f1e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Fine blueprint grid
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.09)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 32) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      const worldToPxX = wx => ((wx + floorW / 2) / floorW) * canvas.width;
+      const worldToPxY = wz => ((wz + floorD / 2) / floorD) * canvas.height;
+
+      // Draw each zone border, header, and part markers
+      zoneRects.forEach(zr => {
+        const px = worldToPxX(zr.x);
+        const py = worldToPxY(zr.z);
+        const pw = (zr.w / floorW) * canvas.width;
+        const ph = (zr.d / floorD) * canvas.height;
+        const col = CATEGORIES[zr.cat].color;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+        ctx.fillRect(px, py, pw, ph);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(px, py, pw, ph);
+
+        ctx.fillStyle = col;
+        ctx.font = 'bold 20px monospace';
+        ctx.fillText(`0${zr.idx} // ${CATEGORIES[zr.cat].label.toUpperCase()}`, px + 14, py + 28);
+      });
+
+      const floorTex = new THREE.CanvasTexture(canvas);
+      floorTex.colorSpace = THREE.SRGBColorSpace;
+      layoutFloorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(floorW, floorD),
+        new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.8, metalness: 0.1 })
+      );
+      layoutFloorMesh.rotation.x = -Math.PI / 2;
+      layoutFloorMesh.position.set(0, LAYOUT_FLOOR_Y, 0);
+      layoutFloorMesh.receiveShadow = true;
+      layoutFloorMesh.visible = false;
+      scene.add(layoutFloorMesh);
+    }
+
+    computeKnollingLayout();
+
+    // =========================================================================
+    // 14. MATERIAL & MODE ENGINE (FINISHED / XRAY / CUTAWAY / EXPLODED / LAYOUT)
+    // =========================================================================
+    let currentMode = 'finished';
+    let explosionFactor = 1.0;
+    let cutawayZSlice = 33.0;
+    let animEnabled = true;
+    let xrayOverlayInExploded = false;
+    let selectedPartId = null;
+
+    const xrayShellMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.18,
+      transparent: true,
+      opacity: 0.12,
+      roughness: 0.2,
+      metalness: 0.1,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+
+    const xrayEdgeMaterial = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.42
+    });
+
+    const xrayInternalCache = {};
+    function getXrayInternalMaterial(category) {
+      if (!xrayInternalCache[category]) {
+        const hex = CATEGORIES[category].xrayHex;
+        xrayInternalCache[category] = new THREE.MeshStandardMaterial({
+          color: hex,
+          emissive: hex,
+          emissiveIntensity: 0.55,
+          roughness: 0.25,
+          metalness: 0.45,
+          side: THREE.DoubleSide
+        });
+      }
+      return xrayInternalCache[category];
+    }
+
+    function applyMaterialsForMode() {
+      const useXray = currentMode === 'xray' || (currentMode === 'exploded' && xrayOverlayInExploded);
+
+      parts.forEach(part => {
+        part.meshes.forEach(mesh => {
+          if (useXray) {
+            if (part.isOuterShell) {
+              mesh.material = xrayShellMaterial;
+              if (!mesh.userData.xrayEdges) {
+                const edgesGeom = new THREE.EdgesGeometry(mesh.geometry, 24);
+                const lines = new THREE.LineSegments(edgesGeom, xrayEdgeMaterial);
+                lines.raycast = () => {};
+                mesh.add(lines);
+                mesh.userData.xrayEdges = lines;
+              }
+              mesh.userData.xrayEdges.visible = true;
+            } else {
+              mesh.material = getXrayInternalMaterial(part.category);
+              if (mesh.userData.xrayEdges) mesh.userData.xrayEdges.visible = false;
+            }
+          } else {
+            mesh.material = mesh.userData.originalMaterial;
+            if (mesh.userData.xrayEdges) mesh.userData.xrayEdges.visible = false;
+          }
+
+          // Selection highlight tint
+          if (part.id === selectedPartId) {
+            if (!mesh.userData.selMat) {
+              mesh.userData.selMat = new THREE.MeshStandardMaterial({
+                color: 0x38bdf8,
+                emissive: 0x0ea5e9,
+                emissiveIntensity: 0.65,
+                roughness: 0.2,
+                metalness: 0.4,
+                side: THREE.DoubleSide
+              });
+            }
+            mesh.material = mesh.userData.selMat;
+          }
+
+          // Clipping plane when Cutaway Z-slice slider is pulled inward
+          mesh.material.clippingPlanes = (currentMode === 'cutaway' && cutawayZSlice < 32.8)
+            ? clippingPlanes
+            : null;
+          mesh.material.needsUpdate = true;
+        });
+      });
+
+      renderer.localClippingEnabled = (currentMode === 'cutaway' && cutawayZSlice < 32.8);
+    }
+
+    function syncVisibility() {
+      parts.forEach(p => {
+        p.modeVisible = !(currentMode === 'cutaway' && p.cutawayAction === 'hide');
+        p.root.visible = p.userVisible && categoryVisible[p.category] && p.modeVisible;
+      });
+      updateLivePartCounts();
+    }
+
+    const MODE_DESCRIPTIONS = {
+      finished: 'Complete widebody commercial airliner assembled with glossy composite livery, glass cockpit, swept airfoil wings, twin high-bypass turbofans, and deployed tricycle landing gear.',
+      xray:     'Transparent aerodynamic outer hull with cyan wireframe edges revealing internal fuselage ring frames, spars, ribs, fuel tanks, cockpit avionics, cabin seats, cargo ULDs, and engine cores.',
+      cutaway:  'Surgical port-side cutaway removing outer upper fuselage skins, cabin doors, overhead bins, port wing top skin, and port engine cowl to expose interior systems in full PBR detail.',
+      exploded: 'Three-dimensional engineered exploded view separating all subsystems radially and axially along precision vectors. Drag the Explosion Separation slider to inspect assembly clearances.',
+      layout:   'Complete non-overlapping knolling grid laying every individual part flat across 8 illuminated technical blueprint zones on the hangar floor.'
+    };
+
+    // Camera transition state
+    let camAnim = false;
+    const targetCamPos = new THREE.Vector3(42, 18, 42);
+    const targetCtrlPos = new THREE.Vector3(0, 0, 0);
+
+    controls.addEventListener('start', () => {
+      camAnim = false;
+    });
+
+    function animateCameraTo(pos, lookAt) {
+      targetCamPos.copy(pos);
+      targetCtrlPos.copy(lookAt);
+      camAnim = true;
+    }
+
+    function setMode(mode) {
+      if (!MODE_DESCRIPTIONS[mode]) return;
+      currentMode = mode;
+
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      document.getElementById('mode-description').textContent = MODE_DESCRIPTIONS[mode];
+
+      // Toggle contextual controls
+      document.getElementById('explode-control').style.display = mode === 'exploded' ? 'flex' : 'none';
+      document.getElementById('xray-combine-row').style.display = mode === 'exploded' ? 'flex' : 'none';
+      document.getElementById('cutaway-control').style.display = mode === 'cutaway' ? 'flex' : 'none';
+
+      // Hangar vs Blueprint floor
+      const isLayout = mode === 'layout';
+      hangarGrid.visible = !isLayout;
+      shadowFloor.visible = !isLayout;
+      if (layoutFloorMesh) layoutFloorMesh.visible = isLayout;
+
+      syncVisibility();
+      applyMaterialsForMode();
+
+      if (mode === 'layout') {
+        const span = Math.max(layoutBounds.width * 1.12, layoutBounds.depth * 1.55);
+        animateCameraTo(new THREE.Vector3(0, span * 0.86, span * 0.62), new THREE.Vector3(0, LAYOUT_FLOOR_Y, 0));
+      } else if (mode === 'exploded') {
+        animateCameraTo(new THREE.Vector3(60, 29, 60), new THREE.Vector3(0, 0, 0));
+      } else if (mode === 'cutaway') {
+        animateCameraTo(new THREE.Vector3(42, 14, 30), new THREE.Vector3(0, 0, 2));
+      } else {
+        animateCameraTo(new THREE.Vector3(48, 20, 48), new THREE.Vector3(0, 0, 0));
+      }
+    }
+
+    // =========================================================================
+    // 15. LIVE PART COUNT & UI RENDERING
+    // =========================================================================
+    function getVisiblePartCount() {
+      return parts.reduce((acc, p) => acc + (p.root.visible ? 1 : 0), 0);
+    }
+
+    function getTotalPartCount() {
+      return parts.length;
+    }
+
+    function updateLivePartCounts() {
+      const vis = getVisiblePartCount();
+      const tot = getTotalPartCount();
+
+      const liveEl = document.getElementById('live-visible-count');
+      if (liveEl.textContent !== String(vis)) {
+        liveEl.textContent = String(vis);
+        liveEl.classList.remove('pulse');
+        void liveEl.offsetWidth;
+        liveEl.classList.add('pulse');
+      }
+      document.getElementById('live-total-count').textContent = `${tot} Parts`;
+      document.getElementById('tel-visible').textContent = `${vis} / ${tot}`;
+
+      let activeMass = 0;
+      let activeTris = 0;
+      let activeCats = 0;
+      const catCounts = {};
+      CATEGORY_ORDER.forEach(c => { catCounts[c] = { vis: 0, tot: 0 }; });
+
+      parts.forEach(p => {
+        catCounts[p.category].tot++;
+        if (p.root.visible) {
+          catCounts[p.category].vis++;
+          activeMass += p.specs.massKg;
+          activeTris += p.triCount;
+        }
+      });
+
+      CATEGORY_ORDER.forEach(c => {
+        if (catCounts[c].vis > 0) activeCats++;
+        const pill = document.getElementById(`sub-count-${c}`);
+        const row = document.getElementById(`sub-row-${c}`);
+        if (pill) pill.textContent = `${catCounts[c].vis}/${catCounts[c].tot}`;
+        if (row) row.classList.toggle('dimmed', catCounts[c].vis === 0);
+      });
+
+      document.getElementById('tel-cats').textContent = `${activeCats} / ${CATEGORY_ORDER.length}`;
+      document.getElementById('tel-mass').textContent = `${(activeMass / 1000).toFixed(1)} t`;
+      document.getElementById('tel-tris').textContent = activeTris.toLocaleString();
+
+      renderManifestList();
+    }
+
+    function buildSubsystemUI() {
+      const list = document.getElementById('subsystem-list');
+      list.innerHTML = '';
+
+      CATEGORY_ORDER.forEach(cat => {
+        const meta = CATEGORIES[cat];
+        const row = document.createElement('div');
+        row.className = 'subsystem-row';
+        row.id = `sub-row-${cat}`;
+
+        row.innerHTML = `
+          <div class="sub-info" title="Click to toggle ${meta.label}">
+            <span class="sub-dot" style="background:${meta.color};"></span>
+            <span class="sub-name">${meta.label}</span>
+          </div>
+          <span class="sub-count" id="sub-count-${cat}">0/0</span>
+          <div class="sub-actions">
+            <button class="icon-btn" data-action="toggle" title="Show/Hide Subsystem">👁</button>
+            <button class="icon-btn" data-action="isolate" title="Isolate Subsystem">◎</button>
+          </div>
+        `;
+
+        const toggleCat = () => {
+          categoryVisible[cat] = !categoryVisible[cat];
+          row.querySelector('[data-action="toggle"]').classList.toggle('off', !categoryVisible[cat]);
+          syncVisibility();
+        };
+
+        row.querySelector('.sub-info').addEventListener('click', toggleCat);
+        row.querySelector('[data-action="toggle"]').addEventListener('click', toggleCat);
+        row.querySelector('[data-action="isolate"]').addEventListener('click', () => {
+          const onlyThis = CATEGORY_ORDER.every(c => (c === cat ? categoryVisible[c] : !categoryVisible[c]));
+          CATEGORY_ORDER.forEach(c => {
+            categoryVisible[c] = onlyThis ? true : (c === cat);
+            const rEl = document.getElementById(`sub-row-${c}`);
+            rEl.querySelector('[data-action="toggle"]').classList.toggle('off', !categoryVisible[c]);
+          });
+          syncVisibility();
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    function renderManifestList() {
+      const searchVal = document.getElementById('part-search').value.trim().toLowerCase();
+      const list = document.getElementById('manifest-list');
+      const filtered = parts.filter(p =>
+        !searchVal ||
+        p.name.toLowerCase().includes(searchVal) ||
+        p.id.toLowerCase().includes(searchVal) ||
+        CATEGORIES[p.category].label.toLowerCase().includes(searchVal)
+      );
+      document.getElementById('manifest-count').textContent = filtered.length;
+
+      list.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      filtered.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'manifest-item' +
+          (p.id === selectedPartId ? ' selected' : '') +
+          (!p.root.visible ? ' hidden-part' : '');
+        el.innerHTML = `
+          <span class="manifest-id">${p.id}</span>
+          <span class="manifest-name">${p.name}</span>
+          <span class="sub-dot" style="background:${CATEGORIES[p.category].color};width:7px;height:7px;"></span>
+        `;
+        el.addEventListener('click', () => {
+          selectPart(p.id, true);
+        });
+        frag.appendChild(el);
+      });
+      list.appendChild(frag);
+    }
+
+    // =========================================================================
+    // 16. RAYCASTING, HOVER TOOLTIP & PART INSPECTOR
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const tooltip = document.getElementById('hover-tooltip');
+    let hoveredPartId = null;
+    let pointerDownPos = { x: 0, y: 0 };
+
+    function getIntersectedPart(clientX, clientY) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(aircraftGroup.children, true);
+      for (const hit of hits) {
+        let obj = hit.object;
+        // Skip hidden parts
+        let vis = true;
+        let cur = obj;
+        while (cur) {
+          if (!cur.visible) { vis = false; break; }
+          cur = cur.parent;
+        }
+        if (!vis) continue;
+        if (obj.userData && obj.userData.partId) {
+          return parts.find(p => p.id === obj.userData.partId) || null;
+        }
+      }
+      return null;
+    }
+
+    renderer.domElement.addEventListener('pointerdown', e => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('pointermove', e => {
+      const part = getIntersectedPart(e.clientX, e.clientY);
+      if (part) {
+        hoveredPartId = part.id;
+        renderer.domElement.style.cursor = 'pointer';
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${e.clientX + 14}px`;
+        tooltip.style.top = `${e.clientY + 14}px`;
+        tooltip.querySelector('.tt-cat').textContent = `${part.id} // ${CATEGORIES[part.category].label.toUpperCase()}`;
+        tooltip.querySelector('.tt-name').textContent = part.name;
+      } else {
+        hoveredPartId = null;
+        renderer.domElement.style.cursor = 'grab';
+        tooltip.style.display = 'none';
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerup', e => {
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 5) return; // Dragged to orbit
+      const part = getIntersectedPart(e.clientX, e.clientY);
+      if (part) {
+        selectPart(part.id, false);
+      }
+    });
+
+    function selectPart(partId, shouldFocus = false) {
+      selectedPartId = partId;
+      const part = parts.find(p => p.id === partId);
+      if (!part) return;
+
+      applyMaterialsForMode();
+      renderManifestList();
+
+      const card = document.getElementById('inspector-card');
+      card.classList.add('visible');
+      document.getElementById('insp-id').textContent = `${part.id} // ${CATEGORIES[part.category].label.toUpperCase()}`;
+      document.getElementById('insp-name').textContent = part.name;
+      document.getElementById('insp-mat').textContent = part.specs.material;
+      document.getElementById('insp-mass').textContent = `${part.specs.massKg} kg`;
+      document.getElementById('insp-pos').textContent = `(${part.root.position.x.toFixed(1)}, ${part.root.position.y.toFixed(1)}, ${part.root.position.z.toFixed(1)})`;
+      document.getElementById('insp-scale').textContent = currentMode === 'layout' ? `${Math.round(part.layoutScale * 100)}%` : '100%';
+      document.getElementById('insp-desc').textContent = part.specs.description;
+      document.getElementById('insp-toggle').textContent = part.userVisible ? 'Hide Part' : 'Show Part';
+
+      if (shouldFocus) {
+        focusOnPart(part);
+      }
+    }
+
+    function focusOnPart(part) {
+      const pos = part.root.position.clone();
+      const offset = currentMode === 'layout'
+        ? new THREE.Vector3(0, 8, 9)
+        : new THREE.Vector3(10, 5, 10);
+      animateCameraTo(pos.clone().add(offset), pos);
+    }
+
+    // =========================================================================
+    // 17. EVENT LISTENERS & KEYBOARD SHORTCUTS
+    // =========================================================================
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+    });
+
+    document.getElementById('explode-slider').addEventListener('input', e => {
+      explosionFactor = parseFloat(e.target.value);
+      document.getElementById('explode-val').textContent = `${explosionFactor.toFixed(2)}×`;
+    });
+
+    document.getElementById('cutaway-slider').addEventListener('input', e => {
+      cutawayZSlice = parseFloat(e.target.value);
+      clippingPlanes[0].constant = cutawayZSlice;
+      document.getElementById('cutaway-val').textContent = cutawayZSlice >= 32.8 ? 'Full' : `Z ≤ ${cutawayZSlice.toFixed(1)}`;
+      applyMaterialsForMode();
+    });
+
+    document.getElementById('toggle-anim').addEventListener('click', e => {
+      animEnabled = !animEnabled;
+      e.target.classList.toggle('on', animEnabled);
+      e.target.textContent = animEnabled ? 'ACTIVE' : 'PAUSED';
+    });
+
+    document.getElementById('toggle-xray-overlay').addEventListener('click', e => {
+      xrayOverlayInExploded = !xrayOverlayInExploded;
+      e.target.classList.toggle('on', xrayOverlayInExploded);
+      e.target.textContent = xrayOverlayInExploded ? 'ON' : 'OFF';
+      applyMaterialsForMode();
+    });
+
+    document.getElementById('btn-show-all').addEventListener('click', () => {
+      CATEGORY_ORDER.forEach(c => {
+        categoryVisible[c] = true;
+        const r = document.getElementById(`sub-row-${c}`);
+        if (r) r.querySelector('[data-action="toggle"]').classList.remove('off');
+      });
+      parts.forEach(p => { p.userVisible = true; });
+      syncVisibility();
+    });
+
+    document.getElementById('btn-collapse-drawer').addEventListener('click', () => {
+      document.getElementById('left-drawer').classList.add('collapsed');
+    });
+    document.getElementById('btn-expand-drawer').addEventListener('click', () => {
+      document.getElementById('left-drawer').classList.remove('collapsed');
+    });
+
+    document.getElementById('part-search').addEventListener('input', renderManifestList);
+
+    document.getElementById('insp-close').addEventListener('click', () => {
+      selectedPartId = null;
+      document.getElementById('inspector-card').classList.remove('visible');
+      applyMaterialsForMode();
+      renderManifestList();
+    });
+
+    document.getElementById('insp-focus').addEventListener('click', () => {
+      const p = parts.find(item => item.id === selectedPartId);
+      if (p) focusOnPart(p);
+    });
+
+    document.getElementById('insp-toggle').addEventListener('click', () => {
+      const p = parts.find(item => item.id === selectedPartId);
+      if (!p) return;
+      p.userVisible = !p.userVisible;
+      document.getElementById('insp-toggle').textContent = p.userVisible ? 'Hide Part' : 'Show Part';
+      syncVisibility();
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cam = btn.dataset.cam;
+        if (cam === 'hero') animateCameraTo(new THREE.Vector3(48, 20, 48), new THREE.Vector3(0, 0, 0));
+        else if (cam === 'side') animateCameraTo(new THREE.Vector3(52, 4, 0), new THREE.Vector3(0, 0, 0));
+        else if (cam === 'top') animateCameraTo(new THREE.Vector3(0, 74, 0.01), new THREE.Vector3(0, 0, 0));
+        else if (cam === 'nose') animateCameraTo(new THREE.Vector3(0, 5, 48), new THREE.Vector3(0, 0, 8));
+        else if (cam === 'cockpit') animateCameraTo(new THREE.Vector3(7.5, 4.5, 29), new THREE.Vector3(0, 0.2, 23.5));
+        else if (cam === 'engine') animateCameraTo(new THREE.Vector3(16.5, -1.2, 10.5), new THREE.Vector3(10.2, -2.2, 2.8));
+      });
+    });
+
+    window.addEventListener('keydown', e => {
+      if (document.activeElement.tagName === 'INPUT') return;
+      if (e.key === '1') setMode('finished');
+      else if (e.key === '2') setMode('xray');
+      else if (e.key === '3') setMode('cutaway');
+      else if (e.key === '4') setMode('exploded');
+      else if (e.key === '5') setMode('layout');
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // =========================================================================
+    // 18. INITIALIZE UI, EXPOSE GLOBAL API & START RENDER LOOP
+    // =========================================================================
+    buildSubsystemUI();
+    setMode('finished');
+
+    function snapToTarget() {
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        if (currentMode === 'layout') {
+          p.root.position.copy(p.layoutPos);
+          p.root.quaternion.copy(p.layoutQuat);
+          p.root.scale.setScalar(p.layoutScale);
+        } else if (currentMode === 'exploded') {
+          p.root.position.copy(p.assembledPos).addScaledVector(p.explodedOffset, explosionFactor);
+          p.root.quaternion.copy(p.explodedQuat);
+          p.root.scale.setScalar(1.0);
+        } else {
+          p.root.position.copy(p.assembledPos);
+          p.root.quaternion.copy(p.assembledQuat);
+          p.root.scale.setScalar(1.0);
+        }
+      }
+      camera.position.copy(targetCamPos);
+      controls.target.copy(targetCtrlPos);
+      camAnim = false;
+      controls.update();
+    }
+
+    window.aircraftApp = {
+      scene,
+      camera,
+      renderer,
+      parts,
+      getMode: () => currentMode,
+      setMode,
+      snapToTarget,
+      getVisiblePartCount,
+      getTotalPartCount,
+      toggleCategory: (cat) => {
+        if (!(cat in categoryVisible)) return;
+        categoryVisible[cat] = !categoryVisible[cat];
+        syncVisibility();
+      }
+    };
+
+    const clock = new THREE.Clock();
+    const tmpVec = new THREE.Vector3();
+    const tmpScale = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.elapsedTime;
+      const lerpFactor = 1 - Math.exp(-9.0 * dt);
+
+      // Interpolate every part toward its active mode transform
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        let targetScale = 1.0;
+        let targetQuat = p.assembledQuat;
+
+        if (currentMode === 'layout') {
+          tmpVec.copy(p.layoutPos);
+          targetQuat = p.layoutQuat;
+          targetScale = p.layoutScale;
+        } else if (currentMode === 'exploded') {
+          tmpVec.copy(p.assembledPos).addScaledVector(p.explodedOffset, explosionFactor);
+          targetQuat = p.explodedQuat;
+        } else {
+          tmpVec.copy(p.assembledPos);
+        }
+
+        p.root.position.lerp(tmpVec, lerpFactor);
+        p.root.quaternion.slerp(targetQuat, lerpFactor);
+        tmpScale.setScalar(targetScale);
+        p.root.scale.lerp(tmpScale, lerpFactor);
+      }
+
+      // Turbofan rotation & navigation strobe lights
+      if (animEnabled) {
+        for (const r of animatedFanRotors) {
+          r.obj.rotation.z += r.speed * dt;
+        }
+        const pulse = (Math.sin(elapsed * 5.0) + 1) * 0.5;
+        for (const nl of navLights) {
+          nl.mesh.scale.setScalar(0.85 + pulse * 0.35);
+        }
+      }
+
+      // Smooth camera presets & mode transitions
+      if (camAnim) {
+        camera.position.lerp(targetCamPos, lerpFactor * 0.85);
+        controls.target.lerp(targetCtrlPos, lerpFactor * 0.85);
+        if (camera.position.distanceTo(targetCamPos) < 0.15 && controls.target.distanceTo(targetCtrlPos) < 0.15) {
+          camAnim = false;
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
